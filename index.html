@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-look="classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Taiwan Agri Gallery</title>
+  <meta name="description" content="A catalogue of the 157 theme halls of Taiwan's Ministry of Agriculture, in English, 繁體中文, 简体中文 and Bahasa Melayu.">
+  <meta name="theme-color" content="#f6f8f3">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Agri Gallery">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    /* Apply the saved look before first paint, so a dark-mode reader never sees a white flash. */
+    (function () {
+      try {
+        var p = JSON.parse(localStorage.getItem('twagri.prefs.v1') || '{}');
+        var dark = p.mode === 'dark' || (p.mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var r = document.documentElement;
+        r.dataset.theme = dark ? 'dark' : 'light';
+        r.dataset.look = dark ? (p.dark || 'midnight') : (p.light || 'classic');
+      } catch (e) {}
+    })();
+  </script>
+  <script src="js/whatsnew.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <img class="brand-mark" src="icons/icon.svg" alt="" width="32" height="32">
+      <h1 id="app-title">Taiwan Agri Gallery</h1>
+    </a>
+    <a id="settings-link" class="icon-btn" href="#/settings" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.4 7.4 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+    </a>
+  </header>
+  <main id="main" class="wrap"><p class="loading">…</p></main>
+  <noscript><p class="wrap">This app needs JavaScript.</p></noscript>
+</body>
+</html>
