@@ -1,0 +1,23 @@
+# Release rule
+
+Every change that ships to users adds an entry at the top of `RELEASES` in `js/releases.js`:
+the new version number, the day in Malaysia (`date`, UTC+8), the moment it goes live in UTC
+(`at`, `date -u +%Y-%m-%dT%H:%M:00Z`), and what changed in plain words in en, zh (简体), zht (繁體) and ms.
+Bug fixes bump the last digit, new features the middle one.
+
+Shared standard for all of Bryan Woo's apps:
+https://github.com/bryanwoo988/woobrothers.my/blob/main/APP-STANDARDS.md
+
+# Before committing
+
+- `node tools/build-sw.mjs` then `npm test` (the sw test fails if the precache list is stale).
+- Default language stays English. Every interface string needs en, zht, zhs, ms (`tests/i18n.test.js`).
+
+# Content rules
+
+- 繁體 text is MOA's own, unchanged. 简体 is OpenCC t2s of it; do not hand-edit data/halls.json.
+- English/Malay summaries in `tools/content/translations.py` restate only facts in that hall's MOA overview.
+  No added facts, no health claims beyond what MOA states, and keep MOA's disclaimers (e.g. roselle, herbs).
+- Articles are not copied into the app: halls and sections link to kmweb.moa.gov.tw.
+- Images come from MOA (used with permission) and are credited in Settings → About.
+- Cache names and storage keys start with `twagri`.
