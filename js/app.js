@@ -1,26 +1,31 @@
-/* Taiwan Agri Gallery: a catalogue of MOA's 157 theme halls.
+/* Taiwan Agri Gallery: MOA's 157 theme halls with their full articles, offline.
 
    Routes (hash):
-     #/          all halls        #/c/B   one category
-     #/h/19      one hall         #/settings
+     #/              all halls          #/c/B          one category
+     #/h/19          one hall           #/s/19/860     one section's articles
+     #/a/19/10694    one article        #/settings
    The search text lives in memory, so going back to the list keeps it. */
 
 import * as prefs from './prefs.js';
 import { t, LANG_NAMES } from './i18n.js';
-import { text, sectionText, altName, filterHalls, countByCat } from './catalog.js';
+import { text, sectionText, altName, filterHalls, countByCat, norm } from './catalog.js';
 import { APP_URL, MOA_LIST, hallUrl, sectionUrl, PREFIX } from './config.js';
 import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
+import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved } from './content.js';
+import { t2s } from './t2s.js';
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const CAT_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Z'];
+const EXT = { target: '_blank', rel: 'noopener' };
 
 let DATA = null;
 let query = '';
 const hays = new Map();
 const scrollMemory = new Map();
 let lastRoute = '';
+let renderToken = 0;
 
 export function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
@@ -37,6 +42,9 @@ export function el(tag, attrs = {}, ...kids) {
 
 const lang = () => prefs.get().lang;
 const tr = (k, v) => t(k, v, lang());
+const hallById = id => DATA.halls.find(x => x.id === id);
+const iconStyle = id => `-webkit-mask-image:url(img/icons/${id}.svg);mask-image:url(img/icons/${id}.svg)`;
+const isZh = () => lang() === 'zht' || lang() === 'zhs';
 
 /* ---------- Shell ---------- */
 
@@ -49,27 +57,43 @@ function renderHeader() {
 
 function route() {
   const h = location.hash.replace(/^#/, '') || '/';
-  const m = h.match(/^\/h\/(\d+)/);
-  if (m) return { name: 'hall', id: +m[1] };
+  let m;
+  if ((m = h.match(/^\/a\/(\d+)\/(\d+)/))) return { name: 'article', hall: +m[1], id: +m[2] };
+  if ((m = h.match(/^\/s\/(\d+)\/(\d+)/))) return { name: 'section', hall: +m[1], id: +m[2] };
+  if ((m = h.match(/^\/h\/(\d+)/))) return { name: 'hall', id: +m[1] };
   if (h.startsWith('/settings')) return { name: 'settings' };
   const c = h.match(/^\/c\/([A-Z])/);
   return { name: 'list', cat: c && CAT_ORDER.includes(c[1]) ? c[1] : '' };
 }
 
-function render() {
-  if (lastRoute.startsWith('#/c/') || lastRoute === '#/' || lastRoute === '') scrollMemory.set(lastRoute || '#/', scrollY);
+let lastList = '#/';
+
+async function render() {
+  scrollMemory.set(lastRoute || '#/', scrollY);
+  const token = ++renderToken;
   renderHeader();
   const r = route();
   const key = location.hash || '#/';
   document.body.dataset.view = r.name;
+  if (r.name === 'list') lastList = key;
   if (!DATA) { main.replaceChildren(el('p', { class: 'loading' }, '…')); return; }
-  if (r.name === 'hall') renderHall(r.id);
-  else if (r.name === 'settings') renderSettings();
-  else renderList(r.cat);
-  const y = r.name === 'list' ? (scrollMemory.get(key) ?? 0) : 0;
+  try {
+    if (r.name === 'hall') await renderHall(r.id, token);
+    else if (r.name === 'section') await renderSection(r.hall, r.id, token);
+    else if (r.name === 'article') await renderArticle(r.hall, r.id, token);
+    else if (r.name === 'settings') renderSettings();
+    else renderList(r.cat);
+  } catch (e) {
+    if (token === renderToken) main.replaceChildren(el('p', { class: 'loading' }, tr('loadFailed')));
+    return;
+  }
+  if (token !== renderToken) return;
+  const y = scrollMemory.get(key) ?? 0;
   requestAnimationFrame(() => scrollTo(0, y));
   lastRoute = key;
 }
+
+const loading = () => main.replaceChildren(el('p', { class: 'loading' }, '…'));
 
 /* ---------- List ---------- */
 
@@ -90,7 +114,18 @@ function card(h) {
         el('p', { class: 'card-alt' }, altName(h, L)))));
 }
 
-const iconStyle = id => `-webkit-mask-image:url(img/icons/${id}.svg);mask-image:url(img/icons/${id}.svg)`;
+// Articles whose title contains every search term (either script).
+export function searchArticles(index, q, max = 60) {
+  const terms = norm(q).split(' ').filter(Boolean);
+  if (!terms.length || terms.join('').length < 2) return [];
+  const out = [];
+  for (const row of index) {
+    const t = norm(row[3]);
+    const s = norm(t2s(row[3]));
+    if (terms.every(x => t.includes(x) || s.includes(x))) { out.push(row); if (out.length >= max) break; }
+  }
+  return out;
+}
 
 function renderList(cat) {
   const L = lang();
@@ -101,14 +136,29 @@ function renderList(cat) {
 
   const grid = el('div', { class: 'grid' });
   const status = el('p', { class: 'status', role: 'status' });
+  const arts = el('section', { class: 'art-results' });
   const input = el('input', {
     type: 'search', class: 'search-input', placeholder: tr('search'), 'aria-label': tr('search'),
     value: query, autocomplete: 'off', enterkeyhint: 'search',
   });
-  const fill = () => {
+  let seq = 0;
+  const fill = async () => {
     const list = filterHalls(DATA.halls, { cat, q: query, lang: L }, hays);
     grid.replaceChildren(...list.map(card));
-    status.textContent = list.length ? tr('results', { n: list.length }) : tr('none', { q: query });
+    status.textContent = list.length ? tr('results', { n: list.length }) : (norm(query) ? tr('none', { q: query }) : '');
+    arts.replaceChildren();
+    if (norm(query).length < 2) return;
+    const mine = ++seq;
+    let index;
+    try { index = await loadIndex(); } catch { return; }
+    if (mine !== seq) return;
+    const hits = searchArticles(index, query).filter(r => !cat || hallById(r[1])?.cats.includes(cat));
+    if (!hits.length) return;
+    arts.append(el('h2', { class: 'sub' }, tr('articleResults', { n: hits.length })),
+      el('ul', { class: 'art-list' }, hits.map(([aid, hid, , title]) => el('li', {},
+        el('a', { href: `#/a/${hid}/${aid}` },
+          el('span', { class: 'art-title' }, zh(title, L)),
+          el('span', { class: 'art-meta' }, text(hallById(hid)?.name, L)))))));
   };
   input.addEventListener('input', () => { query = input.value; fill(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
@@ -117,32 +167,51 @@ function renderList(cat) {
     el('p', { class: 'hero-tag' }, tr('tagline')),
     el('div', { class: 'search' }, el('span', { class: 'search-icon', 'aria-hidden': 'true' }), input));
 
-  main.replaceChildren(intro, chips, status, grid);
+  main.replaceChildren(intro, chips, status, grid, arts);
   fill();
-  // Keep the active category chip in view on narrow screens.
   chips.querySelector('.is-active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
 /* ---------- Hall ---------- */
 
-function renderHall(id) {
+function chineseNote() {
+  return isZh() ? null : el('p', { class: 'note' }, tr('articlesInChinese'));
+}
+
+function sectionLink(hallId, s, title) {
+  if (s.kind === 'list' && s.a.length) {
+    return el('a', { href: s.a.length === 1 ? `#/a/${hallId}/${s.a[0]}` : `#/s/${hallId}/${s.id}` },
+      title, el('span', { class: 'count' }, s.a.length));
+  }
+  if (s.kind === 'link') return el('a', { href: sectionUrl(s.id), ...EXT, class: 'ext' }, title, ' ↗');
+  return null;
+}
+
+async function renderHall(id, token) {
   const L = lang();
-  const h = DATA.halls.find(x => x.id === id);
+  const h = hallById(id);
   if (!h) { location.replace('#/'); return; }
-  const ext = { target: '_blank', rel: 'noopener' };
+  loading();
+  const data = await loadHall(id);
+  if (token !== renderToken) return;
+  const secs = new Map(data.sections.map(s => [s.id, s]));
+  const nArticles = Object.keys(data.articles).length;
 
   const groups = h.groups.map(g => {
-    const title = sectionText(g, L);
-    const head = g.id ? el('a', { href: sectionUrl(g.id), ...ext }, title) : title;
+    const own = g.id ? secs.get(g.id) : null;
+    const head = own ? (sectionLink(id, own, sectionText(g, L)) || sectionText(g, L)) : sectionText(g, L);
+    const items = g.items.map(i => sectionLink(id, secs.get(i.id) || { kind: 'empty', a: [] }, sectionText(i, L))).filter(Boolean);
+    if (!items.length && !(own && own.kind !== 'empty')) return null;
     return el('li', { class: 'group' },
       el('div', { class: 'group-title' }, head),
-      g.items.length ? el('ul', { class: 'items' },
-        g.items.map(i => el('li', {}, el('a', { href: sectionUrl(i.id), ...ext }, sectionText(i, L))))) : null);
-  });
+      items.length ? el('ul', { class: 'items' }, items.map(a => el('li', {}, a))) : null);
+  }).filter(Boolean);
 
+  const keys = hallPhotos(data);
+  const photoBox = el('div', { class: 'photo-save' });
   const note = tr('summaryNote');
   main.replaceChildren(el('article', { class: 'hall' },
-    el('a', { class: 'back', href: backHref(h) }, '← ', tr('back')),
+    el('a', { class: 'back', href: lastList }, '← ', tr('back')),
     el('div', { class: 'hall-cover' },
       el('img', { src: `img/covers/${h.id}.webp`, alt: text(h.name, L), width: 400, height: 178 })),
     el('header', { class: 'hall-head' },
@@ -154,20 +223,112 @@ function renderHall(id) {
     el('section', { class: 'panel' },
       el('h3', {}, tr('overview')),
       el('p', { class: 'intro' }, text(h.intro, L)),
-      note ? el('p', { class: 'fine' }, note) : null,
-      el('a', { class: 'button primary', href: hallUrl(h.id), ...ext }, tr('openHall'), el('span', { class: 'ext', 'aria-hidden': 'true' }, ' ↗'))),
-    groups.length ? el('section', { class: 'panel' },
-      el('h3', {}, tr('sections')),
-      el('p', { class: 'fine' }, tr('sectionsNote')),
-      el('ul', { class: 'groups' }, groups)) : null,
+      note ? el('p', { class: 'fine' }, note) : null),
+    el('section', { class: 'panel' },
+      el('h3', {}, tr('sections'), el('span', { class: 'count' }, tr('nArticles', { n: nArticles }))),
+      chineseNote(),
+      groups.length ? el('ul', { class: 'groups' }, groups) : el('p', { class: 'fine' }, tr('noArticles')),
+      keys.length ? photoBox : null),
     el('p', { class: 'agency' }, tr('maintainer'), ': ',
-      h.agencyUrl ? el('a', { href: h.agencyUrl, ...ext }, text(h.agency, L)) : text(h.agency, L))));
+      h.agencyUrl ? el('a', { href: h.agencyUrl, ...EXT }, text(h.agency, L)) : text(h.agency, L),
+      ' · ', el('a', { href: hallUrl(h.id), ...EXT }, tr('viewOnMoa'), ' ↗'))));
+  if (keys.length) renderPhotoSave(photoBox, keys);
 }
 
-// Back to where the reader came from: the category list they were browsing.
-function backHref(h) {
-  const prev = lastRoute.match(/^#\/c\/[A-Z]$/) ? lastRoute : '#/';
-  return prev;
+async function renderPhotoSave(box, keys) {
+  const saved = await photosSaved(keys).catch(() => 0);
+  const status = el('span', { class: 'fine', role: 'status' });
+  const btn = el('button', { type: 'button', class: 'button' }, tr('savePhotos', { n: keys.length }));
+  const show = n => {
+    status.textContent = n >= keys.length ? tr('photosSaved') : n ? tr('photosPartly', { n, t: keys.length }) : tr('photosOnline');
+    btn.hidden = n >= keys.length;
+  };
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    navigator.storage?.persist?.().catch(() => {});
+    const r = await saveHallPhotos(keys, (d, t) => { status.textContent = tr('savingPhotos', { n: d, t }); });
+    btn.disabled = false;
+    show(keys.length - r.failed);
+  });
+  show(saved);
+  box.replaceChildren(btn, status);
+}
+
+/* ---------- Section ---------- */
+
+async function renderSection(hallId, sid, token) {
+  const L = lang();
+  const h = hallById(hallId);
+  if (!h) { location.replace('#/'); return; }
+  loading();
+  const data = await loadHall(hallId);
+  if (token !== renderToken) return;
+  const s = data.sections.find(x => x.id === sid);
+  if (!s) { location.replace(`#/h/${hallId}`); return; }
+  const items = s.a.map(aid => {
+    const a = data.articles[aid];
+    const ph = firstPhoto(a);
+    return el('li', {}, el('a', { class: 'art-row', href: `#/a/${hallId}/${aid}` },
+      ph ? el('img', { class: 'thumb', src: photoUrl(ph), alt: '', loading: 'lazy', decoding: 'async' }) : el('span', { class: 'thumb none', style: iconStyle(hallId) }),
+      el('span', { class: 'art-text' },
+        el('span', { class: 'art-title' }, zh(a.t, L)),
+        el('span', { class: 'art-meta' }, a.qa ? tr('question') + ' · ' : '', a.upd || a.pub || ''))));
+  });
+  main.replaceChildren(el('div', { class: 'hall' },
+    el('a', { class: 'back', href: `#/h/${hallId}` }, '← ', text(h.name, L)),
+    el('h2', { class: 'page-title' }, zh(s.t, L)),
+    el('p', { class: 'fine' }, tr('nArticles', { n: s.a.length })),
+    chineseNote(),
+    el('ul', { class: 'art-list rows' }, items)));
+}
+
+/* ---------- Article ---------- */
+
+async function renderArticle(hallId, aid, token) {
+  const L = lang();
+  const h = hallById(hallId);
+  if (!h) { location.replace('#/'); return; }
+  loading();
+  const data = await loadHall(hallId);
+  if (token !== renderToken) return;
+  const a = data.articles[aid];
+  if (!a) { location.replace(`#/h/${hallId}`); return; }
+  const sec = data.sections.find(x => x.a.includes(aid));
+  const back = sec && sec.a.length > 1 ? `#/s/${hallId}/${sec.id}` : `#/h/${hallId}`;
+  const backLabel = sec && sec.a.length > 1 ? zh(sec.t, L) : text(h.name, L);
+
+  // Previous / next within the section.
+  const i = sec ? sec.a.indexOf(aid) : -1;
+  const prev = i > 0 ? sec.a[i - 1] : null, next = sec && i < sec.a.length - 1 ? sec.a[i + 1] : null;
+
+  const dates = [a.pub && `${tr(a.qa ? 'asked' : 'published')} ${a.pub}`, a.upd && `${tr('updated')} ${a.upd}`].filter(Boolean).join(' · ');
+  const gallery = a.gallery.length ? el('section', { class: 'gallery' },
+    el('h3', {}, tr('photos')),
+    el('div', { class: 'gallery-grid' }, a.gallery.map(g => el('figure', {},
+      el('img', { src: photoUrl(g.p), alt: zh(g.c, L), loading: 'lazy', decoding: 'async' }),
+      g.c ? el('figcaption', {}, zh(g.c, L)) : null)))) : null;
+  const fileList = files => files.length ? el('ul', { class: 'files' }, files.map(f =>
+    el('li', {}, el('a', { href: f.u, ...EXT }, zh(f.n, L), ' ↗')))) : null;
+  const answers = (a.answers || []).map(x => el('section', { class: 'answer' },
+    el('h3', {}, tr('expertReply'), x.d ? el('span', { class: 'art-meta' }, ' · ', x.d) : null),
+    el('div', { class: 'prose' }, renderHtml(x.body, L)),
+    fileList(x.files)));
+
+  main.replaceChildren(el('article', { class: 'hall reader' },
+    el('a', { class: 'back', href: back }, '← ', backLabel),
+    el('p', { class: 'kicker' }, el('a', { href: `#/h/${hallId}` }, text(h.name, L))),
+    el('h2', { class: 'page-title' }, zh(a.t, L)),
+    dates ? el('p', { class: 'fine' }, dates) : null,
+    chineseNote(),
+    a.qa ? el('h3', { class: 'qa-label' }, tr('question')) : null,
+    el('div', { class: 'prose' }, renderHtml(a.body, L)),
+    gallery,
+    ...answers,
+    a.files.length ? el('section', {}, el('h3', {}, tr('attachments')), el('p', { class: 'fine' }, tr('attachmentsNote')), fileList(a.files)) : null,
+    el('nav', { class: 'prevnext' },
+      prev ? el('a', { href: `#/a/${hallId}/${prev}` }, '← ', zh(data.articles[prev].t, L)) : el('span'),
+      next ? el('a', { href: `#/a/${hallId}/${next}`, class: 'next' }, zh(data.articles[next].t, L), ' →') : el('span')),
+    el('p', { class: 'agency' }, tr('source'), ': ', el('a', { href: `https://kmweb.moa.gov.tw/subject/subject.php?id=${aid}`, ...EXT }, tr('viewOnMoa'), ' ↗'))));
 }
 
 /* ---------- Settings ---------- */
@@ -193,6 +354,22 @@ function modeFor(side, p) {
   return p.mode === 'auto' && now === side ? 'auto' : side;
 }
 
+// How much is on this phone: hall text files cached, storage in use.
+function offlinePanel() {
+  const status = el('p', { class: 'fine', role: 'status' }, '…');
+  (async () => {
+    try {
+      const n = 'caches' in self ? (await (await caches.open('twagri-content')).keys()).length : 0;
+      const ph = 'caches' in self ? (await (await caches.open('twagri-photos')).keys()).length : 0;
+      const est = await navigator.storage?.estimate?.();
+      const mb = est?.usage ? Math.round(est.usage / 1048576) : null;
+      status.textContent = tr('offlineStatus', { n: Math.min(n, DATA.halls.length), t: DATA.halls.length, p: ph })
+        + (mb != null ? ' · ' + tr('storageUsed', { mb }) : '');
+    } catch { status.textContent = ''; }
+  })();
+  return el('section', { class: 'panel' }, el('h3', {}, tr('offlineTitle')), status, el('p', { class: 'fine' }, tr('offline')));
+}
+
 function renderSettings() {
   const p = prefs.get();
   const share = el('div', { class: 'share' });
@@ -215,6 +392,8 @@ function renderSettings() {
       el('p', { class: 'label' }, tr('darkLooks')),
       swatches(prefs.DARK_LOOKS, p.dark, 'dark', look => prefs.set({ dark: look, mode: modeFor('dark', p) }))),
 
+    offlinePanel(),
+
     el('section', { class: 'panel' },
       el('h3', {}, tr('share')),
       el('p', { class: 'fine' }, tr('shareNote')),
@@ -231,8 +410,7 @@ function renderSettings() {
         el('dd', {}, DATA.fetched),
         el('dt', {}, tr('source')),
         el('dd', {}, el('a', { href: MOA_LIST, target: '_blank', rel: 'noopener' }, 'kmweb.moa.gov.tw'))),
-      el('p', { class: 'fine' }, tr('credit')),
-      el('p', { class: 'fine' }, tr('offline')))));
+      el('p', { class: 'fine' }, tr('credit')))));
   renderShare(share, { url: APP_URL, tr, appName: tr('appName') });
 }
 

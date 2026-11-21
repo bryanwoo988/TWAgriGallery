@@ -4,7 +4,7 @@ import { STRINGS, t, LANG_NAMES } from '../js/i18n.js';
 import { LANGS, LIGHT_LOOKS, DARK_LOOKS, MODES } from '../js/prefs.js';
 
 // The summary note is deliberately blank in Chinese: the overview is MOA's own text there.
-const BLANK_OK = new Set(['summaryNote.zht', 'summaryNote.zhs']);
+const BLANK_OK = new Set(['summaryNote.zht', 'summaryNote.zhs', 'articlesInChinese.zht', 'articlesInChinese.zhs']);
 
 test('every interface string exists in all four languages', () => {
   for (const [key, row] of Object.entries(STRINGS)) {

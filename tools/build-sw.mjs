@@ -11,7 +11,9 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from '
 import { fileURLToPath } from 'node:url';
 import { dirname, join, posix } from 'node:path';
 
-const DIRS = ['css', 'js', 'data', 'icons', 'img'];
+// The shell: everything except per-hall article files (CONTENT) and article photos.
+const DIRS = ['css', 'js', 'data', 'icons', 'img/covers', 'img/icons'];
+const IS_CONTENT = f => /^data\/h\/\d+\.json$/.test(f);
 const FILES = ['index.html', 'manifest.webmanifest', 'favicon.ico'];
 const SKIP = /(^\.|\.DS_Store$|~$)/;
 export const BUDGET = 12 * 1048576;
@@ -30,24 +32,31 @@ function walk(root, dir, out = []) {
 
 // What the generated block should say, without writing anything.
 export function plan(root = ROOT) {
-  const files = [
+  const all = [
     ...FILES.filter(f => existsSync(join(root, f))),
     ...DIRS.filter(d => existsSync(join(root, d))).flatMap(d => walk(root, d)),
   ].sort();
+  const files = all.filter(f => !IS_CONTENT(f));
+  const content = all.filter(IS_CONTENT);
   const hash = createHash('sha256');
   for (const f of files) { hash.update(f); hash.update(readFileSync(join(root, f))); }
   const cache = `twagri-${hash.digest('hex').slice(0, 10)}`;
+  const versions = Object.fromEntries(content.map(f => [f, createHash('sha256').update(readFileSync(join(root, f))).digest('hex').slice(0, 10)]));
   const bytes = files.reduce((a, f) => a + statSync(join(root, f)).size, 0);
+  const contentBytes = content.reduce((a, f) => a + statSync(join(root, f)).size, 0);
   const block = [
     '/* --- generated:begin --- */',
     `const CACHE = '${cache}';`,
-    'const ASSETS = [',
+    'const SHELL_ASSETS = [',
     "  './',",
     ...files.map(f => `  '${f}',`),
     '];',
+    'const CONTENT = {',
+    ...content.map(f => `  '${f}': '${versions[f]}',`),
+    '};',
     '/* --- generated:end --- */',
   ].join('\n');
-  return { files, bytes, cache, block, ok: bytes <= BUDGET };
+  return { files, content, bytes, contentBytes, cache, block, ok: bytes <= BUDGET };
 }
 
 export function currentBlock(root = ROOT) {
@@ -66,7 +75,8 @@ export function build(root = ROOT) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const r = build();
-  console.log(`precache: ${r.files.length} files, ${(r.bytes / 1048576).toFixed(2)} MB (budget ${BUDGET / 1048576} MB)`);
+  console.log(`shell:    ${r.files.length} files, ${(r.bytes / 1048576).toFixed(2)} MB (budget ${BUDGET / 1048576} MB)`);
+  console.log(`content:  ${r.content.length} hall files, ${(r.contentBytes / 1048576).toFixed(2)} MB`);
   if (!r.ok) { console.error('precache over budget'); process.exit(1); }
   console.log(`cache:    ${r.cache}`);
 }
