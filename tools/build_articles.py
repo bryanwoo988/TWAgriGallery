@@ -23,8 +23,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, ".."))
 CACHE = os.path.join(ROOT, ".cache", "moa")
 BASE = "https://kmweb.moa.gov.tw"
-PHOTO_W = 800          # longest side of a stored photo
-PHOTO_Q = 60           # WebP quality
+PHOTO_W = 640          # longest side of a stored photo
+PHOTO_Q = 55           # WebP quality
 
 ITEM = re.compile(r'<a class="title" href="subject\.php\?id=(\d+)" title="([^"]*)"')
 

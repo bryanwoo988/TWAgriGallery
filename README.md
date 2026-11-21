@@ -27,7 +27,7 @@ Text and images belong to the Ministry of Agriculture, Taiwan, and are used with
 
 Articles are MOA's 繁體 text (tags reduced to a safe whitelist), converted to 简体 on the phone by
 `js/t2s.js` (OpenCC t2s tables). In English and Malay the app says the articles are in Chinese.
-Article photos are resized to 800 px WebP under `img/p/`.
+Article photos are resized to 640 px (longest side) WebP under `img/p/`.
 
 ## Refreshing the data
 
