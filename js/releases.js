@@ -6,7 +6,7 @@
 
 export const RELEASES = [
   {
-    v: '1.1.0', date: '2026-11-22', at: '2026-11-21T16:00:00Z',
+    v: '1.1.0', date: '2026-11-22', at: '2026-11-21T23:54:00Z',
     notes: {
       en: [
         'The full text of 24,741 MOA articles is now inside the app and reads offline (in Chinese; 简体 is converted on the phone).',
