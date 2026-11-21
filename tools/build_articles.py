@@ -154,6 +154,9 @@ def clean_html(raw, photos):
 def parse_article(aid):
     path = f"{CACHE}/art/{aid}.html"
     if not os.path.exists(path):
+        # a section whose own page is the article (or redirects to it)
+        path = f"{CACHE}/sec/{SELF_SRC.get(aid, aid)}_p1.html"
+    if not os.path.exists(path):
         return None
     s = open(path, encoding="utf-8").read()
     m = re.search(r'<h2 class="articleTitle">(.*?)</h2>', s, re.S)
@@ -211,18 +214,39 @@ def parse_qa(s, title):
             "answers": answers, "files": []}, photos
 
 
+LINK_ITEM = re.compile(r'<a\b([^>]*\bclass="(?:title|list_link)"[^>]*)>')
+SUBJECT = "https://kmweb.moa.gov.tw/subject/"
+
+
 def section_items(sid):
-    """Articles listed in a section (all pages), and whether it lists only outside items."""
-    items, other, p = [], 0, 1
+    """A section's articles (all pages), the other items it lists as [title, MOA url]
+    (news reprints, outside links, files, videos: they open online), and whether it was fetched."""
+    items, links, p = [], [], 1
     while os.path.exists(f"{CACHE}/sec/{sid}_p{p}.html"):
         s = open(f"{CACHE}/sec/{sid}_p{p}.html", encoding="utf-8").read()
         main = s.split('id="AC"')[-1]
-        for a, title in ITEM.findall(main):
-            if title.endswith("(文章類型資料)") and int(a) not in items:
-                items.append(int(a))
-        other += len(re.findall(r'class="title" href="(?:news\.php|theme_data\.php|https?://)', main))
+        for attrs in LINK_ITEM.findall(main):
+            href = re.search(r'href="([^"]+)"', attrs)
+            title = re.search(r'title="([^"]*)"', attrs)
+            if not href or not title:
+                continue
+            href, title = html.unescape(href.group(1)), html.unescape(title.group(1)).strip()
+            a = re.fullmatch(r"subject\.php\?id=(\d+)", href)
+            if a and title.endswith("(文章類型資料)"):
+                if int(a.group(1)) not in items:
+                    items.append(int(a.group(1)))
+                continue
+            if not re.match(r"(?:subject|news|theme_data)\.php\?|https?://", href):
+                continue
+            url = href if href.startswith("http") else SUBJECT + href
+            title = re.sub(r"\((?:連結|檔案|影片|照片集)類型資料\)$", "", title).strip()
+            if title and [title, url] not in links:
+                links.append([title, url])
         p += 1
-    return items, other, p > 1
+    return items, links, p > 1
+
+
+SELF_SRC = {}  # article id -> the section whose fetched page holds it
 
 
 def section_self_article(sid):
@@ -231,9 +255,11 @@ def section_self_article(sid):
     if os.path.exists(meta):
         m = re.search(r"subject\.php\?id=(\d+)", open(meta).read())
         if m and int(m.group(1)) != sid:
+            SELF_SRC[int(m.group(1))] = sid
             return int(m.group(1))
     s = open(f"{CACHE}/sec/{sid}_p1.html", encoding="utf-8").read() if os.path.exists(f"{CACHE}/sec/{sid}_p1.html") else ""
-    return sid if '<h2 class="articleTitle">' in s else None
+    # News lists share the article title style; only a page with article text counts.
+    return sid if '<h2 class="articleTitle">' in s and ('class="articlepara"' in s or "專家回覆" in s) else None
 
 
 def main():
@@ -246,12 +272,12 @@ def main():
         sections, articles = [], {}
 
         def add(sid, title):
-            items, other, fetched = section_items(sid)
+            items, links, fetched = section_items(sid)
             if not items:
                 own = section_self_article(sid)
                 if own:
                     items = [own]
-            kind = "list" if items else ("link" if other or fetched else "empty")
+            kind = "list" if items else ("link" if links or fetched else "empty")
             if kind == "link":
                 stats["link_sections"] += 1
             for aid in items:
@@ -268,7 +294,10 @@ def main():
                 stats["chars"] += len(text(art["body"]))
                 for p in photos:
                     all_photos[photo_key(p)] = p
-            sections.append({"id": sid, "t": title, "kind": kind, "a": [a for a in items if a in articles]})
+            sec = {"id": sid, "t": title, "kind": kind, "a": [a for a in items if a in articles]}
+            if links:
+                sec["l"] = links
+            sections.append(sec)
 
         for g in h["groups"]:
             if g["id"]:

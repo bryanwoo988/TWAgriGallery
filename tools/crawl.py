@@ -124,7 +124,9 @@ def crawl_section(sid):
     return fails
 
 
-ITEM = re.compile(r'<a class="title" href="subject\.php\?id=(\d+)" title="([^"]*)"')
+# Both list layouts: <a class="title" href=… title=…> and <a href=… title=… class="list_link">.
+ITEM = re.compile(r'<a\b[^>]*?href="subject\.php\?id=(\d+)"[^>]*?title="([^"]*)"[^>]*\bclass="(?:title|list_link)"'
+                  r'|<a class="title" href="subject\.php\?id=(\d+)" title="([^"]*)"')
 
 
 def article_ids():
@@ -135,7 +137,9 @@ def article_ids():
             p = 1
             while os.path.exists(f"{CACHE}/sec/{sid}_p{p}.html"):
                 s = open(f"{CACHE}/sec/{sid}_p{p}.html", encoding="utf-8").read()
-                ids |= {int(a) for a, title in ITEM.findall(s) if title.endswith("(文章類型資料)")}
+                for a1, t1, a2, t2 in ITEM.findall(s):
+                    if (t1 or t2).endswith("(文章類型資料)"):
+                        ids.add(int(a1 or a2))
                 p += 1
     return sorted(ids)
 
