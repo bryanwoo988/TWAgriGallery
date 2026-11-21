@@ -179,10 +179,15 @@ function chineseNote() {
 }
 
 function sectionLink(hallId, s, title) {
-  if (s.kind === 'list' && s.a.length) {
-    return el('a', { href: s.a.length === 1 ? `#/a/${hallId}/${s.a[0]}` : `#/s/${hallId}/${s.id}` },
-      title, el('span', { class: 'count' }, s.a.length));
+  const links = s.l?.length || 0;
+  if (s.a.length === 1 && !links) {
+    return el('a', { href: `#/a/${hallId}/${s.a[0]}` }, title, el('span', { class: 'count' }, 1));
   }
+  if (s.a.length) {
+    return el('a', { href: `#/s/${hallId}/${s.id}` }, title, el('span', { class: 'count' }, s.a.length));
+  }
+  // Only items that open online (news reprints, outside links, files).
+  if (links) return el('a', { href: `#/s/${hallId}/${s.id}`, class: 'ext' }, title, ' ↗');
   if (s.kind === 'link') return el('a', { href: sectionUrl(s.id), ...EXT, class: 'ext' }, title, ' ↗');
   return null;
 }
@@ -274,12 +279,16 @@ async function renderSection(hallId, sid, token) {
         el('span', { class: 'art-title' }, zh(a.t, L)),
         el('span', { class: 'art-meta' }, a.qa ? tr('question') + ' · ' : '', a.upd || a.pub || ''))));
   });
+  const online = (s.l || []).map(([t, u]) => el('li', {}, el('a', { href: u, ...EXT, class: 'ext' }, zh(t, L), ' ↗')));
   main.replaceChildren(el('div', { class: 'hall' },
     el('a', { class: 'back', href: `#/h/${hallId}` }, '← ', text(h.name, L)),
     el('h2', { class: 'page-title' }, zh(s.t, L)),
-    el('p', { class: 'fine' }, tr('nArticles', { n: s.a.length })),
+    s.a.length ? el('p', { class: 'fine' }, tr('nArticles', { n: s.a.length })) : null,
     chineseNote(),
-    el('ul', { class: 'art-list rows' }, items)));
+    s.a.length ? el('ul', { class: 'art-list rows' }, items) : null,
+    online.length ? el('h3', { class: 'sub' }, tr('moreOnline')) : null,
+    online.length ? el('ul', { class: 'files online' }, online) : null,
+    el('p', {}, el('a', { href: sectionUrl(s.id), ...EXT, class: 'ext' }, tr('viewOnMoa'), ' ↗'))));
 }
 
 /* ---------- Article ---------- */

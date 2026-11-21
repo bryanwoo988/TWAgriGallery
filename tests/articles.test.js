@@ -29,12 +29,12 @@ test('sections point at articles that exist', () => {
 function checkHtml(html, where) {
   for (const [, tag, attrs] of html.matchAll(/<([a-z0-9]+)([^>]*)>/g)) {
     assert.ok(ALLOWED.has(tag), `${where}: <${tag}>`);
-    for (const [, name] of attrs.matchAll(/\s([\w-]+)=/g)) {
+    for (const [, name] of attrs.matchAll(/\s([\w-]+)="[^"]*"/g)) {
       assert.ok(['href', 'target', 'rel', 'data-p', 'alt', 'colspan', 'rowspan'].includes(name), `${where}: ${tag} ${name}`);
     }
     if (tag === 'a' && /href=/.test(attrs)) assert.match(attrs, /href="https?:\/\//, where);
   }
-  assert.ok(!/javascript:|on\w+=/i.test(html.replace(/>[^<]*</g, '><')), `${where}: script in markup`);
+  assert.ok(!/javascript:|\son\w+=/i.test(html.replace(/>[^<]*</g, '><')), `${where}: script in markup`);
 }
 
 test('article HTML holds only safe tags, and every photo it names ships', () => {

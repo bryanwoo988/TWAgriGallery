@@ -31,6 +31,7 @@ export const STRINGS = {
   },
   nArticles: { en: '{n} articles', zht: '{n} 篇', zhs: '{n} 篇', ms: '{n} artikel' },
   noArticles: { en: 'This hall has no articles.', zht: '此主題館沒有文章。', zhs: '此主题馆没有文章。', ms: 'Dewan ini tiada artikel.' },
+  moreOnline: { en: 'More on the MOA site (needs internet)', zht: '更多內容在農業部網站（需連網）', zhs: '更多内容在农业部网站（需联网）', ms: 'Lagi di laman MOA (perlu internet)' },
   viewOnMoa: { en: 'View on MOA', zht: '在農業部網站查看', zhs: '在农业部网站查看', ms: 'Lihat di MOA' },
   savePhotos: { en: 'Save {n} photos for offline', zht: '下載 {n} 張照片供離線瀏覽', zhs: '下载 {n} 张照片供离线浏览', ms: 'Simpan {n} foto untuk luar talian' },
   savingPhotos: { en: 'Saving photos… {n}/{t}', zht: '下載照片中… {n}/{t}', zhs: '下载照片中… {n}/{t}', ms: 'Menyimpan foto… {n}/{t}' },
