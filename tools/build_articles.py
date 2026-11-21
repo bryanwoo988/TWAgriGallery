@@ -214,6 +214,9 @@ def parse_qa(s, title):
             "answers": answers, "files": []}, photos
 
 
+# Photo budget (GitHub Pages sites stop at 1 GB): articles in MOA's main list layout and
+# single-article sections keep every photo; articles in the compact list layout keep their first.
+ALL_PHOTOS_FOR = set()
 LINK_ITEM = re.compile(r'<a\b([^>]*\bclass="(?:title|list_link)"[^>]*)>')
 SUBJECT = "https://kmweb.moa.gov.tw/subject/"
 
@@ -235,6 +238,8 @@ def section_items(sid):
             if a and title.endswith("(文章類型資料)"):
                 if int(a.group(1)) not in items:
                     items.append(int(a.group(1)))
+                if 'class="title"' in attrs:
+                    ALL_PHOTOS_FOR.add(int(a.group(1)))
                 continue
             if not re.match(r"(?:subject|news|theme_data)\.php\?|https?://", href):
                 continue
@@ -267,6 +272,14 @@ def main():
     os.makedirs(f"{ROOT}/data/h", exist_ok=True)
     have = {f[:-5] for f in os.listdir(f"{ROOT}/img/p")} if os.path.isdir(f"{ROOT}/img/p") else set()
     index = []
+    # Settle each article's photo rule before building, whichever hall lists it first.
+    for h in halls:
+        for g in h["groups"]:
+            for sid in ([g["id"]] if g["id"] else []) + [i["id"] for i in g["items"]]:
+                if not section_items(sid)[0]:
+                    own = section_self_article(sid)
+                    if own:
+                        ALL_PHOTOS_FOR.add(own)
     all_photos, stats = {}, {"articles": 0, "chars": 0, "photos": 0, "missing": 0, "link_sections": 0}
     for h in halls:
         sections, articles = [], {}
@@ -292,6 +305,9 @@ def main():
                 articles[aid] = art
                 stats["articles"] += 1
                 stats["chars"] += len(text(art["body"]))
+                if aid not in ALL_PHOTOS_FOR:
+                    photos = photos[:1]
+                    art["_only"] = {photo_key(p) for p in photos}
                 for p in photos:
                     all_photos[photo_key(p)] = p
             sec = {"id": sid, "t": title, "kind": kind, "a": [a for a in items if a in articles]}
@@ -305,7 +321,7 @@ def main():
             for i in g["items"]:
                 add(i["id"], i["zht"])
         for aid, art in articles.items():
-            keep_local_photos(art, have)
+            keep_local_photos(art, have & art.pop("_only") if "_only" in art else have)
             sec = next((x["id"] for x in sections if aid in x["a"]), 0)
             index.append([aid, h["id"], sec, art["t"]])
         json.dump({"id": h["id"], "sections": sections, "articles": {str(k): v for k, v in articles.items()}},
