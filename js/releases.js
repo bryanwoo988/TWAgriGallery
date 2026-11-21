@@ -6,6 +6,35 @@
 
 export const RELEASES = [
   {
+    v: '1.1.0', date: '2026-11-22', at: '2026-11-21T16:00:00Z',
+    notes: {
+      en: [
+        'The full text of 24,741 MOA articles is now inside the app and reads offline (in Chinese; 简体 is converted on the phone).',
+        'Search finds article titles as well as halls.',
+        'Each hall has a button to save its photos for offline reading. Settings shows how much is stored.',
+        'News reprints, outside links and files are listed by title and open on the MOA site.',
+      ],
+      zht: [
+        '農業部 24,741 篇文章全文已收進應用程式，離線也能閱讀。',
+        '搜尋可以找文章標題，不只是主題館。',
+        '每個主題館都有「下載照片供離線瀏覽」按鈕；設定頁顯示已儲存的容量。',
+        '新聞轉載、外部連結和檔案按標題列出，點選後在農業部網站開啟。',
+      ],
+      zh: [
+        '农业部 24,741 篇文章全文已收进应用程序，离线也能阅读（简体由手机自动转换）。',
+        '搜索可以找文章标题，不只是主题馆。',
+        '每个主题馆都有“下载照片供离线浏览”按钮；设置页显示已保存的容量。',
+        '新闻转载、外部链接和文件按标题列出，点选后在农业部网站打开。',
+      ],
+      ms: [
+        'Teks penuh 24,741 artikel MOA kini ada dalam aplikasi dan boleh dibaca luar talian (dalam bahasa Cina).',
+        'Carian kini menemui tajuk artikel, bukan hanya dewan.',
+        'Setiap dewan ada butang untuk menyimpan gambarnya bagi bacaan luar talian. Tetapan menunjukkan saiz yang disimpan.',
+        'Berita cetakan semula, pautan luar dan fail disenaraikan mengikut tajuk dan dibuka di laman MOA.',
+      ],
+    },
+  },
+  {
     v: '1.0.0', date: '2026-11-21', at: '2026-11-20T23:45:00Z',
     notes: {
       en: [

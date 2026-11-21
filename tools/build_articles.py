@@ -345,28 +345,42 @@ def keep_local_photos(art, have):
     art["gallery"] = [g for g in art["gallery"] if g["p"] in have]
 
 
-def convert_photos(all_photos):
+def convert_one(job):
     from PIL import Image
+    src, out = job
+    try:
+        im = Image.open(src).convert("RGB")
+        im.thumbnail((PHOTO_W, PHOTO_W), Image.LANCZOS)
+        im.save(out, "WEBP", quality=PHOTO_Q, method=6)
+        return None
+    except Exception as e:
+        return f"bad photo {src}: {e}"
+
+
+def convert_photos(all_photos):
+    from concurrent.futures import ProcessPoolExecutor
     os.makedirs(f"{ROOT}/img/p", exist_ok=True)
-    done = missing = 0
+    jobs, ready, missing = [], 0, 0
     for key, url in all_photos.items():
         out = f"{ROOT}/img/p/{key}.webp"
         if os.path.exists(out):
-            done += 1
+            ready += 1
             continue
         src = f"{CACHE}/photo/" + re.sub(r"[^\w.]", "_", url.lstrip("/"))
-        if not os.path.exists(src):
+        if os.path.exists(src):
+            jobs.append((src, out))
+        else:
             missing += 1
-            continue
-        try:
-            im = Image.open(src)
-            im = im.convert("RGB")
-            im.thumbnail((PHOTO_W, PHOTO_W), Image.LANCZOS)
-            im.save(out, "WEBP", quality=PHOTO_Q, method=6)
-            done += 1
-        except Exception as e:
-            print("bad photo", url, e)
-    print(f"photos: {done} ready, {missing} not downloaded")
+    with ProcessPoolExecutor() as ex:
+        for i, err in enumerate(ex.map(convert_one, jobs, chunksize=32), 1):
+            if err:
+                print(err)
+            else:
+                ready += 1
+            if i % 2000 == 0:
+                print(f"  {i}/{len(jobs)}", flush=True)
+    print(f"photos: {ready} ready, {missing} not downloaded")
+    print("run build_articles.py again so the article files keep the photos now present")
 
 
 if __name__ == "__main__":
