@@ -18,6 +18,7 @@ https://github.com/bryanwoo988/woobrothers.my/blob/main/APP-STANDARDS.md
 - 繁體 text is MOA's own, unchanged. 简体 is OpenCC t2s of it; do not hand-edit data/halls.json.
 - English/Malay summaries in `tools/content/translations.py` restate only facts in that hall's MOA overview.
   No added facts, no health claims beyond what MOA states, and keep MOA's disclaimers (e.g. roselle, herbs).
-- Articles are not copied into the app: halls and sections link to kmweb.moa.gov.tw.
+- Article text is MOA's, unchanged apart from the tag whitelist in tools/build_articles.py; do not hand-edit data/h/.
+  News reprints (新鮮聞), member comments, votes and askers' names stay out; those link to kmweb.moa.gov.tw.
 - Images come from MOA (used with permission) and are credited in Settings → About.
 - Cache names and storage keys start with `twagri`.
