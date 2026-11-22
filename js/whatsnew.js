@@ -19,9 +19,10 @@
    WhatsNew.label(releases)  "v1.2.0 · 2026-10-13 14:05": the version and when
      this build went live (index.html's Last-Modified, set by GitHub Pages)
    WhatsNew.offerUpdate(apply)  bar: "A new version is available [Update now] [Later]"
-   WhatsNew.watch({ apply })  for apps without their own update check: looks
+   WhatsNew.watch({ apply, quiet })  for apps without their own update check: looks
      for a newer index.html on open, on return to the screen and every 15
-     minutes, and offers it with offerUpdate. */
+     minutes, and offers it with offerUpdate. If quiet() returns true (say the
+     reader is on the home screen, not mid-article) it applies at once instead. */
 (function () {
   'use strict';
 
@@ -165,7 +166,10 @@
       busy = true;
       fetch(opts.url || './', { method: 'HEAD', cache: 'no-store' }).then(function (r) {
         var live = Date.parse(r.ok ? r.headers.get('Last-Modified') : '');
-        if (isFinite(live) && live - running >= 1000) { offered = true; offerUpdate(opts.apply); }
+        if (isFinite(live) && live - running >= 1000) {
+          offered = true;
+          if (opts.quiet && opts.apply && opts.quiet()) opts.apply(); else offerUpdate(opts.apply);
+        }
       }).catch(function () { /* offline: try again later */ }).then(function () { busy = false; });
     }
     setTimeout(check, 3000);

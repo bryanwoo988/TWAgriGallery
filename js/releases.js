@@ -6,6 +6,27 @@
 
 export const RELEASES = [
   {
+    v: '1.5.0', date: '2026-11-22', at: '2026-11-22T13:53:00Z',
+    notes: {
+      en: [
+        'New versions now go in by themselves while you are on the home page. While you are reading, the bar still asks, and the update goes in when you come back to the home page.',
+        'Articles now refresh from MOA once a month: new articles and their photos are added, and each update appears in this list.',
+      ],
+      zht: [
+        '停在首頁時，新版本會自動更新；正在讀文章時仍會詢問，回到首頁時再自動更新。',
+        '文章每月從農業部自動更新一次：加入新文章和照片，每次更新都會列在這裡。',
+      ],
+      zh: [
+        '停在首页时，新版本会自动更新；正在读文章时仍会询问，回到首页时再自动更新。',
+        '文章每月从农业部自动更新一次：加入新文章和照片，每次更新都会列在这里。',
+      ],
+      ms: [
+        'Versi baharu kini dipasang sendiri semasa anda di halaman utama. Semasa membaca, bar masih bertanya, dan kemas kini dipasang apabila anda kembali ke halaman utama.',
+        'Artikel kini dikemas kini daripada MOA sebulan sekali: artikel baharu dan fotonya ditambah, dan setiap kemas kini muncul dalam senarai ini.',
+      ],
+    },
+  },
+  {
     v: '1.4.0', date: '2026-11-22', at: '2026-11-22T11:04:00Z',
     notes: {
       en: [

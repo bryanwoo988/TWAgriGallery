@@ -8,6 +8,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # The monthly content refresh (refresh.yml) calls this after pushing its commit:
+  # a push made by a workflow does not start other workflows by itself.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -23,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - uses: actions/setup-node@v4
         with:

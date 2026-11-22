@@ -651,21 +651,36 @@ function applyUpdate() {
   }).catch(go);
 }
 
+/* A new version goes in by itself while the reader is idle on the home screen:
+   not reading, not searching, near the top, no dialog open. Anywhere else the
+   bar offers it, and it goes in the next time they come back to the home screen. */
+function quietMoment() {
+  return route().name === 'list' && !norm(query) && scrollY < 200 && !document.querySelector('.wn-scrim, .ask-scrim');
+}
+
 function setupUpdates(firstVisit) {
   const W = window.WhatsNew;
+  let pending = null;
+  const later = apply => {
+    if (quietMoment()) { apply(); return; }
+    pending = apply;
+    W?.offerUpdate(apply);
+  };
+  addEventListener('hashchange', () => { if (pending && quietMoment()) pending(); });
   if (W) {
     W.init({
       version: VERSION, releases: RELEASES, key: `${PREFIX}.seenVersion`,
       lang: () => (lang() === 'zhs' ? 'zh' : lang()), isNewUser: () => firstVisit,
     });
-    W.watch({ apply: applyUpdate });
+    // watch() hands every new build to later(), which decides between now and the bar.
+    W.watch({ apply: () => later(applyUpdate), quiet: () => true });
   }
   if (!('serviceWorker' in navigator)) return;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js').catch(() => {});
-  // A new build took over in the background: offer the reload, never force it.
+  // A new build took over in the background: load it now if the reader is idle, else offer it.
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController) W?.offerUpdate(() => location.reload());
+    if (hadController) later(() => location.reload());
   });
 }
 
