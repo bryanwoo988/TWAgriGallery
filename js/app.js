@@ -14,6 +14,7 @@ import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
 import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved, syncHalls, allPhotos } from './content.js';
 import { t2s } from './t2s.js';
+import { setLexicon, sciNodes } from './sciname.js';
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
@@ -157,7 +158,7 @@ function renderList(cat) {
     arts.append(el('h2', { class: 'sub' }, tr('articleResults', { n: hits.length })),
       el('ul', { class: 'art-list' }, hits.map(([aid, hid, , title]) => el('li', {},
         el('a', { href: `#/a/${hid}/${aid}` },
-          el('span', { class: 'art-title' }, zh(title, L)),
+          el('span', { class: 'art-title' }, sciNodes(zh(title, L))),
           el('span', { class: 'art-meta' }, text(hallById(hid)?.name, L)))))));
   };
   input.addEventListener('input', () => { query = input.value; fill(); });
@@ -227,7 +228,7 @@ async function renderHall(id, token) {
         el('p', { class: 'hall-cats' }, h.cats.map(c => el('a', { class: 'tag', href: `#/c/${c}` }, text(DATA.categories[c], L)))))),
     el('section', { class: 'panel' },
       el('h3', {}, tr('overview')),
-      el('p', { class: 'intro' }, text(h.intro, L)),
+      el('p', { class: 'intro' }, sciNodes(text(h.intro, L))),
       note ? el('p', { class: 'fine' }, note) : null),
     el('section', { class: 'panel' },
       el('h3', {}, tr('sections'), el('span', { class: 'count' }, tr('nArticles', { n: nArticles }))),
@@ -276,7 +277,7 @@ async function renderSection(hallId, sid, token) {
     return el('li', {}, el('a', { class: 'art-row', href: `#/a/${hallId}/${aid}` },
       ph ? el('img', { class: 'thumb', src: photoUrl(ph), alt: '', loading: 'lazy', decoding: 'async' }) : el('span', { class: 'thumb none', style: iconStyle(hallId) }),
       el('span', { class: 'art-text' },
-        el('span', { class: 'art-title' }, zh(a.t, L)),
+        el('span', { class: 'art-title' }, sciNodes(zh(a.t, L))),
         el('span', { class: 'art-meta' }, a.qa ? tr('question') + ' · ' : '', a.upd || a.pub || ''))));
   });
   const online = (s.l || []).map(([t, u]) => el('li', {}, el('a', { href: u, ...EXT, class: 'ext' }, zh(t, L), ' ↗')));
@@ -315,7 +316,7 @@ async function renderArticle(hallId, aid, token) {
     el('h3', {}, tr('photos')),
     el('div', { class: 'gallery-grid' }, a.gallery.map(g => el('figure', {},
       el('img', { src: photoUrl(g.p), alt: zh(g.c, L), loading: 'lazy', decoding: 'async' }),
-      g.c ? el('figcaption', {}, zh(g.c, L)) : null)))) : null;
+      g.c ? el('figcaption', {}, sciNodes(zh(g.c, L))) : null)))) : null;
   const fileList = files => files.length ? el('ul', { class: 'files' }, files.map(f =>
     el('li', {}, el('a', { href: f.u, ...EXT }, zh(f.n, L), ' ↗')))) : null;
   const answers = (a.answers || []).map(x => el('section', { class: 'answer' },
@@ -326,7 +327,7 @@ async function renderArticle(hallId, aid, token) {
   main.replaceChildren(el('article', { class: 'hall reader' },
     el('a', { class: 'back', href: back }, '← ', backLabel),
     el('p', { class: 'kicker' }, el('a', { href: `#/h/${hallId}` }, text(h.name, L))),
-    el('h2', { class: 'page-title' }, zh(a.t, L)),
+    el('h2', { class: 'page-title' }, sciNodes(zh(a.t, L))),
     dates ? el('p', { class: 'fine' }, dates) : null,
     chineseNote(),
     a.qa ? el('h3', { class: 'qa-label' }, tr('question')) : null,
@@ -535,6 +536,7 @@ async function start() {
   render();
   try {
     DATA = await (await fetch('data/halls.json')).json();
+    fetch('data/sci.json').then(r => r.json()).then(lex => { setLexicon(lex); render(); }).catch(() => {});
   } catch {
     main.replaceChildren(el('p', { class: 'loading' }, 'Could not load data. Check your connection and reload.'));
     return;

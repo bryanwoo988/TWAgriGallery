@@ -6,6 +6,7 @@
    be cached by another site, so only photos copied here work offline. */
 
 import { t2s } from './t2s.js';
+import { italicizeIn } from './sciname.js';
 
 const halls = new Map();
 
@@ -65,6 +66,7 @@ export function renderHtml(html, lang) {
     const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) n.nodeValue = t2s(n.nodeValue);
   }
+  italicizeIn(tpl.content);
   return tpl.content;
 }
 

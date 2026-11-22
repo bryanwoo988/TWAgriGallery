@@ -20,5 +20,7 @@ https://github.com/bryanwoo988/woobrothers.my/blob/main/APP-STANDARDS.md
   No added facts, no health claims beyond what MOA states, and keep MOA's disclaimers (e.g. roselle, herbs).
 - Article text is MOA's, unchanged apart from the tag whitelist in tools/build_articles.py; do not hand-edit data/h/.
   News reprints (新鮮聞), member comments, votes and askers' names stay out; those link to kmweb.moa.gov.tw.
+- Scientific names are italicized in the app (js/sciname.js), not in the data: only genera MOA itself writes
+  as scientific names (data/sci.json, built by tools/build_articles.py).
 - Images come from MOA (used with permission) and are credited in Settings → About.
 - Cache names and storage keys start with `twagri`.

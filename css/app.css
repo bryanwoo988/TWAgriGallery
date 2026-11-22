@@ -288,3 +288,4 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 .ask-card p { margin: 0 0 16px; color: var(--ink-2); line-height: 1.55; }
 .ask-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .ask-actions .button { flex: 1 1 auto; min-height: 44px; }
+i.sci, .prose i, .prose em { font-style: italic; }
