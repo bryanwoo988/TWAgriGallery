@@ -6,6 +6,31 @@
 
 export const RELEASES = [
   {
+    v: '1.5.2', date: '2026-11-23', at: '2026-11-22T21:21:00Z',
+    notes: {
+      en: [
+        'Fixed: on a first visit over a slow connection, article text and photos could download before the app was ready to keep them, so they were not saved for offline and had to download again.',
+        'Fixed: typing in the search box right after opening the app could be interrupted.',
+        'The app now uses less memory after opening many halls.',
+      ],
+      zht: [
+        '修正：網路慢時第一次打開，文章和照片可能在應用程式準備好之前就開始下載，結果沒有存下來供離線使用，下次又要重新下載。',
+        '修正：剛打開應用程式時在搜尋框打字可能被打斷。',
+        '打開很多主題館之後，應用程式佔用的記憶體更少。',
+      ],
+      zh: [
+        '修正：网络慢时第一次打开，文章和照片可能在应用程序准备好之前就开始下载，结果没有存下来供离线使用，下次又要重新下载。',
+        '修正：刚打开应用程序时在搜索框打字可能被打断。',
+        '打开很多主题馆之后，应用程序占用的内存更少。',
+      ],
+      ms: [
+        'Dibaiki: pada lawatan pertama dengan sambungan perlahan, teks artikel dan foto boleh mula dimuat turun sebelum aplikasi bersedia menyimpannya, jadi ia tidak disimpan untuk luar talian dan perlu dimuat turun semula.',
+        'Dibaiki: menaip dalam kotak carian sejurus selepas membuka aplikasi boleh terganggu.',
+        'Aplikasi kini menggunakan kurang memori selepas membuka banyak dewan.',
+      ],
+    },
+  },
+  {
     v: '1.5.1', date: '2026-11-23', at: '2026-11-22T20:07:00Z',
     notes: {
       en: [
