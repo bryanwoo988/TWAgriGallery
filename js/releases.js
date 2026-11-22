@@ -6,7 +6,7 @@
 
 export const RELEASES = [
   {
-    v: '1.2.0', date: '2026-11-22', at: '2026-11-22T03:05:00Z',
+    v: '1.2.0', date: '2026-11-22', at: '2026-11-22T03:17:00Z',
     notes: {
       en: [
         'Fixed: "Update now" kept coming back. Updates now install quickly; article text downloads in the background afterwards.',
