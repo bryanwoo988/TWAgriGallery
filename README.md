@@ -47,6 +47,16 @@ npm test
 `build_data.py` stops if a hall has no English/Malay entry in `translations.py`, so a new MOA hall
 cannot ship untranslated.
 
+## Monthly refresh
+
+`.github/workflows/refresh.yml` runs on the 2nd of each month (03:17 Malaysia time) and can be
+started by hand from the Actions tab. It reads every section list again, downloads only new
+articles and their photos (articles already in the app keep their stored text), writes a release
+entry with `tools/add_release.py`, runs the tests, commits to main and deploys. It refuses to
+publish if more than 5% of articles disappear, or if the site would pass 1 GB. The hall list
+itself (`data/halls.json`) is not refreshed by it: a new MOA hall needs its English and Malay
+summary written first.
+
 ## Layout
 
 | Path | What |

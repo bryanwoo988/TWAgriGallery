@@ -8,6 +8,14 @@ Bug fixes bump the last digit, new features the middle one.
 Shared standard for all of Bryan Woo's apps:
 https://github.com/bryanwoo988/woobrothers.my/blob/main/APP-STANDARDS.md
 
+# Shipping
+
+- The owner has authorized Claude to merge its own pull requests into main without asking,
+  after `npm test` passes and a browser check. Say what went live and link the PR.
+- `.github/workflows/refresh.yml` refreshes articles monthly and commits to main by itself
+  (new articles only; `tools/add_release.py` writes the release entry). It must keep working:
+  run it by hand after changing tools/crawl.py or tools/build_articles.py.
+
 # Before committing
 
 - `node tools/build-sw.mjs` then `npm test` (the sw test fails if the precache list is stale).

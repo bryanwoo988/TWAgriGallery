@@ -282,12 +282,27 @@ def main():
                     own = section_self_article(sid)
                     if own:
                         ALL_PHOTOS_FOR.add(own)
-    all_photos, stats = {}, {"articles": 0, "chars": 0, "photos": 0, "missing": 0, "link_sections": 0}
+    all_photos, stats = {}, {"articles": 0, "chars": 0, "photos": 0, "missing": 0, "link_sections": 0, "reused": 0}
     for h in halls:
         sections, articles = [], {}
+        # The previous build of this hall. A monthly refresh only downloads new articles,
+        # so articles already in the app are taken from here, and a section whose list
+        # page could not be fetched this time keeps its previous entry.
+        prev_path = f"{ROOT}/data/h/{h['id']}.json"
+        prev = json.load(open(prev_path, encoding="utf-8")) if os.path.exists(prev_path) else {"sections": [], "articles": {}}
+        prev_secs = {x["id"]: x for x in prev["sections"]}
 
         def add(sid, title):
             items, links, fetched = section_items(sid)
+            if not fetched and sid in prev_secs:
+                old = prev_secs[sid]
+                for aid in old["a"]:
+                    if aid not in articles and str(aid) in prev["articles"]:
+                        articles[aid] = prev["articles"][str(aid)]
+                        stats["articles"] += 1
+                        stats["reused"] += 1
+                sections.append(old)
+                return
             if not items:
                 own = section_self_article(sid)
                 if own:
@@ -299,6 +314,11 @@ def main():
                 if aid in articles:
                     continue
                 r = parse_article(aid)
+                if not r and str(aid) in prev["articles"]:
+                    articles[aid] = prev["articles"][str(aid)]
+                    stats["articles"] += 1
+                    stats["reused"] += 1
+                    continue
                 if not r:
                     if os.path.exists(f"{CACHE}/sec/{sid}_p1.html"):
                         stats["missing"] += 1
@@ -338,10 +358,16 @@ def main():
     texts += [v for h in halls for v in h["intro"].values()]
     json.dump(sci_lexicon(texts), open(f"{ROOT}/data/sci.json", "w"), separators=(",", ":"))
     # For "download all photos": every shipped photo, hall by hall, and their total size.
-    ship = [k for k in all_photos if k in have]
+    ship = []
+    for f in sorted(glob.glob(f"{ROOT}/data/h/*.json"), key=lambda p: int(os.path.basename(p)[:-5])):
+        for a in json.load(open(f, encoding="utf-8"))["articles"].values():
+            for b in [a["body"]] + [x["body"] for x in a.get("answers", [])]:
+                ship += re.findall(r'data-p="(\w+)"', b)
+            ship += [g["p"] for g in a["gallery"]]
+    ship = [k for k in dict.fromkeys(ship) if k in have]
     size = sum(os.path.getsize(f"{ROOT}/img/p/{k}.webp") for k in ship)
     # When the articles were fetched (day in Malaysia, UTC+8) and how many: shown in Settings → About.
-    newest = max((os.path.getmtime(f"{CACHE}/art/{n}") for n in os.listdir(f"{CACHE}/art") if n.endswith(".html")), default=0)
+    newest = max((os.path.getmtime(f"{CACHE}/sec/{n}") for n in os.listdir(f"{CACHE}/sec") if n.endswith(".html")), default=0)
     fetched = time.strftime("%Y-%m-%d", time.gmtime(newest + 8 * 3600)) if newest else ""
     json.dump({"fetched": fetched, "articles": stats["articles"], "bytes": size, "keys": ship},
               open(f"{ROOT}/data/photos.json", "w"), separators=(",", ":"))

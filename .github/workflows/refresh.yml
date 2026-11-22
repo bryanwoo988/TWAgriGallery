@@ -1,0 +1,94 @@
+name: Monthly content refresh
+
+# Once a month: read every section list on MOA again, download only articles
+# that are new since the last refresh (articles already in the app keep their
+# stored text), add their photos, write a release note, test, commit to main
+# and deploy. If nothing changed, nothing is committed. Runs at night in
+# Malaysia and Taiwan, one request at a time (MOA answers 429 to parallel ones).
+#
+# Guards: tools/add_release.py refuses a build that lost more than 5% of its
+# articles, npm test checks every article and photo, and the site must stay
+# under GitHub Pages' 1 GB.
+
+on:
+  schedule:
+    - cron: '17 19 1 * *'   # 1st of the month 19:17 UTC = 2nd, 03:17 in Malaysia
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      changed: ${{ steps.release.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Python packages
+        run: pip install requests pillow
+
+      - name: Section lists (about an hour)
+        run: python3 tools/crawl.py lists
+
+      - name: New articles only
+        run: python3 tools/crawl.py articles --new
+
+      - name: Build, download the new photos, build again with them
+        run: |
+          python3 tools/build_articles.py
+          python3 tools/crawl.py photos
+          python3 tools/build_articles.py --photos
+          python3 tools/build_articles.py
+
+      - name: Release note (only if articles were added or removed)
+        id: release
+        run: |
+          set +e
+          python3 tools/add_release.py
+          code=$?
+          set -e
+          if [ "$code" = 3 ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "$code" != 0 ]; then exit "$code"; fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Service worker, tests and size
+        if: steps.release.outputs.changed == 'true'
+        run: |
+          node tools/build-sw.mjs
+          npm test
+          size=$(du -sbc index.html manifest.webmanifest favicon.ico sw.js css js data icons img | tail -1 | cut -f1)
+          echo "site: $size bytes"
+          test "$size" -lt 1000000000
+
+      - name: Commit to main
+        if: steps.release.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data img/p js/releases.js sw.js
+          git commit -m "Monthly content refresh from MOA"
+          git push
+
+  deploy:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: main

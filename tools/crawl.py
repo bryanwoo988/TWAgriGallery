@@ -157,6 +157,11 @@ def run(step):
                     print(f"  {i}/{len(sids)}", flush=True)
     elif step == "articles":
         ids = article_ids()
+        if "--new" in sys.argv:
+            # Monthly refresh: articles already in the app keep their stored text.
+            index = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "index.json")
+            known = {row[0] for row in json.load(open(index))} if os.path.exists(index) else set()
+            ids = [a for a in ids if a not in known]
         print(f"{len(ids)} articles", flush=True)
 
         def one(a):
