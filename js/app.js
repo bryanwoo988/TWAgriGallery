@@ -16,6 +16,7 @@ import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, 
 import { t2s } from './t2s.js';
 import { setLexicon, sciNodes } from './sciname.js';
 import { createLibrary } from './library.js';
+import { fold, terms as ftTerms } from './fulltext.js';
 
 const library = createLibrary();
 
@@ -121,16 +122,33 @@ function card(h) {
 }
 
 // Articles whose title contains every search term (either script).
+// Article titles, folded once (繁/简 to one form, as in full-text search), then matched per keystroke.
+const foldedTitles = new WeakMap();
 export function searchArticles(index, q, max = 60) {
-  const terms = norm(q).split(' ').filter(Boolean);
+  const terms = ftTerms(norm(q));
   if (!terms.length || terms.join('').length < 2) return [];
+  if (!foldedTitles.has(index)) foldedTitles.set(index, index.map(row => fold(norm(row[3]))));
+  const titles = foldedTitles.get(index);
   const out = [];
-  for (const row of index) {
-    const t = norm(row[3]);
-    const s = norm(t2s(row[3]));
-    if (terms.every(x => t.includes(x) || s.includes(x))) { out.push(row); if (out.length >= max) break; }
+  for (let i = 0; i < index.length; i++) {
+    if (terms.every(x => titles[i].includes(x))) { out.push(index[i]); if (out.length >= max) break; }
   }
   return out;
+}
+
+/* Full-text search runs in a worker (js/search-worker.js); the newest query wins. */
+let searchWorker = null, searchSeq = 0;
+function fullTextSearch(q, skip, onProgress) {
+  return new Promise((resolve, reject) => {
+    try { searchWorker ??= new Worker('js/search-worker.js', { type: 'module' }); } catch (e) { reject(e); return; }
+    const id = ++searchSeq;
+    searchWorker.onmessage = ({ data }) => {
+      if (data.type === 'progress') onProgress(data);
+      else if (data.id === id) resolve(data);
+    };
+    searchWorker.onerror = reject;
+    searchWorker.postMessage({ id, q, skip, halls: DATA.halls.map(h => h.id), base: new URL('./', location.href).href });
+  });
 }
 
 function renderList(cat) {
@@ -158,13 +176,36 @@ function renderList(cat) {
     let index;
     try { index = await loadIndex(); } catch { return; }
     if (mine !== seq) return;
-    const hits = searchArticles(index, query).filter(r => !cat || hallById(r[1])?.cats.includes(cat));
-    if (!hits.length) return;
-    arts.append(el('h2', { class: 'sub' }, tr('articleResults', { n: hits.length })),
-      el('ul', { class: 'art-list' }, hits.map(([aid, hid, , title]) => el('li', {},
-        el('a', { href: `#/a/${hid}/${aid}` },
-          el('span', { class: 'art-title' }, sciNodes(zh(title, L))),
-          el('span', { class: 'art-meta' }, text(hallById(hid)?.name, L)))))));
+    const inCat = hid => !cat || hallById(hid)?.cats.includes(cat);
+    const hits = searchArticles(index, query).filter(r => inCat(r[1]));
+    if (hits.length) {
+      arts.append(el('h2', { class: 'sub' }, tr('articleResults', { n: hits.length })),
+        el('ul', { class: 'art-list' }, hits.map(([aid, hid, , title]) => el('li', {},
+          el('a', { href: `#/a/${hid}/${aid}` },
+            el('span', { class: 'art-title' }, sciNodes(zh(title, L))),
+            el('span', { class: 'art-meta' }, text(hallById(hid)?.name, L)))))));
+    }
+    // Then the article text, a moment after typing stops.
+    const full = el('section', { class: 'full-results' }, el('p', { class: 'fine', role: 'status' }, tr('searching')));
+    arts.append(full);
+    await new Promise(r => setTimeout(r, 350));
+    if (mine !== seq) return;
+    let res;
+    try {
+      res = await fullTextSearch(query, hits.map(([aid, hid]) => `${hid}/${aid}`),
+        p => { if (mine === seq) full.firstChild.textContent = tr('indexing', { n: p.done, t: p.total }); });
+    } catch { full.remove(); return; }
+    if (mine !== seq) return;
+    const rows = res.results.filter(r => inCat(r.h));
+    if (!rows.length) { full.replaceChildren(el('p', { class: 'fine' }, tr('noFull'))); return; }
+    full.replaceChildren(
+      el('h2', { class: 'sub' }, tr('fullResults', { n: fmt(cat ? rows.length : res.total) })),
+      res.total > res.results.length ? el('p', { class: 'fine' }, tr('fullShown', { n: res.results.length })) : null,
+      el('ul', { class: 'art-list' }, rows.map(r => el('li', {},
+        el('a', { href: `#/a/${r.h}/${r.a}` },
+          el('span', { class: 'art-title' }, sciNodes(zh(r.t, L))),
+          el('span', { class: 'snippet' }, zh(r.snip[0], L), el('mark', {}, zh(r.snip[1], L)), zh(r.snip[2], L)),
+          el('span', { class: 'art-meta' }, text(hallById(r.h)?.name, L)))))));
   };
   input.addEventListener('input', () => { query = input.value; fill(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
