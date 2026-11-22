@@ -6,7 +6,7 @@
 
 export const RELEASES = [
   {
-    v: '1.4.0', date: '2026-11-22', at: '2026-11-22T11:02:00Z',
+    v: '1.4.0', date: '2026-11-22', at: '2026-11-22T11:04:00Z',
     notes: {
       en: [
         'Search now looks inside the text of all 24,741 articles, offline, and shows where each one mentions your words. 繁體 and 简体 both work; several words must all appear.',
