@@ -83,11 +83,17 @@ function load(content = { 'data/h/19.json': 'v2' }, existing = {}) {
   return { stores, net, run, respond };
 }
 
-test('install fetches only halls whose version changed', async () => {
-  const sw = load({ 'data/h/19.json': 'v2', 'data/h/20.json': 'v1' },
-    { 'twagri-content': [`${BASE}data/h/19.json?v=v1`, `${BASE}data/h/20.json?v=v1`] });
+test('install fetches the app only, never hall text (it would hold an update back)', async () => {
+  const sw = load({ 'data/h/19.json': 'v2', 'data/h/20.json': 'v1' });
   await sw.run('install');
-  assert.deepEqual(sw.net.filter(u => u.includes('data/h/')), [`${BASE}data/h/19.json?v=v2`]);
+  assert.deepEqual(sw.net.filter(u => u.includes('data/h/')), []);
+});
+
+test('fetching a hall stores the current version and drops the older one', async () => {
+  const sw = load({ 'data/h/19.json': 'v2' }, { 'twagri-content': [`${BASE}data/h/19.json?v=v1`] });
+  await sw.respond(`${BASE}data/h/19.json`);
+  assert.deepEqual(sw.net, [`${BASE}data/h/19.json?v=v2`]);
+  assert.deepEqual([...sw.stores.get('twagri-content').keys()], [`${BASE}data/h/19.json?v=v2`]);
 });
 
 test('activate drops old versions and other old shells, never another app\'s caches', async () => {

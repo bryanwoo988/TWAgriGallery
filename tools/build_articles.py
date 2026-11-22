@@ -330,6 +330,10 @@ def main():
     stats["photos"] = len(all_photos)
     stats["photos_local"] = len(have & set(all_photos))
     json.dump(sorted(all_photos.values()), open(f"{CACHE}/photo-urls.json", "w"))
+    # For "download all photos": every shipped photo, hall by hall, and their total size.
+    ship = [k for k in all_photos if k in have]
+    size = sum(os.path.getsize(f"{ROOT}/img/p/{k}.webp") for k in ship)
+    json.dump({"bytes": size, "keys": ship}, open(f"{ROOT}/data/photos.json", "w"), separators=(",", ":"))
     print(json.dumps(stats))
     if "--photos" in sys.argv:
         convert_photos(all_photos)

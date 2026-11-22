@@ -12,7 +12,7 @@ import { text, sectionText, altName, filterHalls, countByCat, norm } from './cat
 import { APP_URL, MOA_LIST, hallUrl, sectionUrl, PREFIX } from './config.js';
 import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
-import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved } from './content.js';
+import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved, syncHalls, allPhotos } from './content.js';
 import { t2s } from './t2s.js';
 
 const $ = s => document.querySelector(s);
@@ -376,7 +376,69 @@ function offlinePanel() {
         + (mb != null ? ' · ' + tr('storageUsed', { mb }) : '');
     } catch { status.textContent = ''; }
   })();
-  return el('section', { class: 'panel' }, el('h3', {}, tr('offlineTitle')), status, el('p', { class: 'fine' }, tr('offline')));
+  return el('section', { class: 'panel' }, el('h3', {}, tr('offlineTitle')), status, allPhotosControl(), el('p', { class: 'fine' }, tr('offline')));
+}
+
+/* ---------- All photos ---------- */
+
+const fmt = n => Number(n).toLocaleString('en-US');
+const mbOf = bytes => fmt(Math.round(bytes / 1e6));
+
+// Settings: start, pause or continue downloading every photo.
+function allPhotosControl() {
+  const box = el('div', { class: 'photo-save' });
+  const draw = st => {
+    if (!box.isConnected && box.dataset.drawn) { allPhotos.listeners.delete(draw); return; }
+    box.dataset.drawn = '1';
+    const line = st.running ? tr('allProgress', { n: fmt(st.done), t: fmt(st.total) })
+      : st.finished ? tr('allDone')
+        : st.total ? tr('allPartly', { n: fmt(st.done), t: fmt(st.total) }) : '';
+    const btn = st.running
+      ? el('button', { type: 'button', class: 'button', onclick: () => allPhotos.pause() }, tr('pause'))
+      : st.finished ? null
+        : el('button', { type: 'button', class: 'button', onclick: () => allPhotos.start() },
+          st.total ? tr('resume') : tr('allButton', { mb: st.bytes ? mbOf(st.bytes) : '…' }));
+    box.replaceChildren(...[btn, line && el('span', { class: 'fine', role: 'status' }, line)].filter(Boolean));
+  };
+  allPhotos.listeners.add(draw);
+  draw(allPhotos.state);
+  allPhotos.load().then(() => draw(allPhotos.state)).catch(() => {});
+  return box;
+}
+
+// A thin progress strip under the top bar, on every page, while photos download.
+function photoStrip() {
+  const bar = document.querySelector('.topbar');
+  let strip = null, hide = null;
+  allPhotos.listeners.add(st => {
+    if (!st.running && !st.finished) { strip?.remove(); strip = null; return; }
+    if (!strip) { strip = el('div', { class: 'dl-strip', role: 'status' }); bar.append(strip); }
+    clearTimeout(hide);
+    const pct = st.total ? (100 * st.done / st.total).toFixed(1) : 0;
+    strip.style.setProperty('--pct', pct + '%');
+    strip.replaceChildren(
+      el('span', {}, st.running ? tr('allProgress', { n: fmt(st.done), t: fmt(st.total) }) : tr('allDone')),
+      st.running ? el('button', { type: 'button', onclick: () => allPhotos.pause() }, tr('pause')) : null);
+    if (!st.running) hide = setTimeout(() => { strip?.remove(); strip = null; }, 4000);
+  });
+}
+
+// Asked once, after any "what's new" sheet has been closed.
+async function askAllPhotos() {
+  if (allPhotos.asked() || allPhotos.wanted()) return;
+  let list;
+  try { list = await allPhotos.load(); } catch { return; }
+  while (document.querySelector('.wn-scrim')) await new Promise(r => setTimeout(r, 500));
+  if (allPhotos.asked()) return;
+  const close = () => { allPhotos.markAsked(); scrim.remove(); };
+  const scrim = el('div', { class: 'ask-scrim' },
+    el('div', { class: 'ask-card', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'ask-title' },
+      el('h2', { id: 'ask-title' }, tr('allAskTitle')),
+      el('p', {}, tr('allAskBody', { n: fmt(list.keys.length), mb: mbOf(list.bytes) })),
+      el('div', { class: 'ask-actions' },
+        el('button', { type: 'button', class: 'button primary', onclick: () => { close(); allPhotos.start(); } }, tr('allYes')),
+        el('button', { type: 'button', class: 'button', onclick: close }, tr('allNo')))));
+  document.body.append(scrim);
 }
 
 function renderSettings() {
@@ -426,13 +488,20 @@ function renderSettings() {
 /* ---------- Updates ---------- */
 
 // Fetch the new service worker, wait until it controls the page, then reload.
+/* "Update now": fetch the new version and load it once its worker has taken
+   over. Installing takes as long as the 6 MB app takes to download, so wait for
+   it (up to a minute) instead of reloading into the old version. */
 function applyUpdate() {
   const go = () => location.reload();
   const sw = navigator.serviceWorker;
   if (!sw) return go();
-  const timer = setTimeout(go, 8000);
+  const timer = setTimeout(go, 60000);
   sw.addEventListener('controllerchange', () => { clearTimeout(timer); go(); }, { once: true });
-  sw.getRegistration().then(reg => (reg ? reg.update() : go())).catch(go);
+  sw.getRegistration().then(async reg => {
+    if (!reg) return go();
+    await reg.update().catch(() => {});
+    if (!reg.installing && !reg.waiting) { clearTimeout(timer); go(); }
+  }).catch(go);
 }
 
 function setupUpdates(firstVisit) {
@@ -472,6 +541,13 @@ async function start() {
   }
   render();
   setupUpdates(firstVisit);
+  photoStrip();
+  // Hall text first (37 MB, small next to photos), then photos if the reader asked for them.
+  setTimeout(async () => {
+    await syncHalls(DATA.halls.map(h => h.id));
+    if (allPhotos.wanted()) allPhotos.start();
+  }, 2000);
+  setTimeout(askAllPhotos, 4000);
 }
 
 start();

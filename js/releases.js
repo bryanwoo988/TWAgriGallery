@@ -6,6 +6,27 @@
 
 export const RELEASES = [
   {
+    v: '1.2.0', date: '2026-11-22', at: '2026-11-22T02:59:00Z',
+    notes: {
+      en: [
+        'Fixed: "Update now" kept coming back. Updates now install quickly; article text downloads in the background afterwards.',
+        'New: on first visit the app asks whether to download all photos (about 765 MB) for offline reading. Progress shows under the top bar; you can pause and continue in Settings.',
+      ],
+      zht: [
+        '修正：「立即更新」一直重複出現。現在更新很快裝好，文章內容之後在背景下載。',
+        '新增：第一次打開時會問要不要下載全部照片（約 765 MB）供離線瀏覽。進度顯示在頂部，可在設定暫停或繼續。',
+      ],
+      zh: [
+        '修正：“立即更新”一直重复出现。现在更新很快装好，文章内容之后在后台下载。',
+        '新增：第一次打开时会问要不要下载全部照片（约 765 MB）供离线浏览。进度显示在顶部，可在设置暂停或继续。',
+      ],
+      ms: [
+        'Dibaiki: "Kemas kini" asyik muncul semula. Kemas kini kini dipasang dengan cepat; teks artikel dimuat turun di latar belakang selepas itu.',
+        'Baharu: pada lawatan pertama aplikasi bertanya sama ada mahu memuat turun semua foto (kira-kira 765 MB) untuk bacaan luar talian. Kemajuan ditunjukkan di bawah bar atas; boleh dijeda dan disambung dalam Tetapan.',
+      ],
+    },
+  },
+  {
     v: '1.1.0', date: '2026-11-22', at: '2026-11-21T23:54:00Z',
     notes: {
       en: [
