@@ -11,12 +11,14 @@ safe tags. Reader comments, votes, share buttons and the portal sidebars are
 not copied. Newspaper reprints (新鮮聞 news.php / theme_data.php) are not
 copied: those sections link to MOA instead.
 """
+import glob
 import hashlib
 import html
 import json
 import os
 import re
 import sys
+import time
 from html.parser import HTMLParser
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -330,9 +332,43 @@ def main():
     stats["photos"] = len(all_photos)
     stats["photos_local"] = len(have & set(all_photos))
     json.dump(sorted(all_photos.values()), open(f"{CACHE}/photo-urls.json", "w"))
+    texts = [b for f in glob.glob(f"{ROOT}/data/h/*.json")
+             for a in json.load(open(f, encoding="utf-8"))["articles"].values()
+             for b in [a["body"]] + [x["body"] for x in a.get("answers", [])]]
+    texts += [v for h in halls for v in h["intro"].values()]
+    json.dump(sci_lexicon(texts), open(f"{ROOT}/data/sci.json", "w"), separators=(",", ":"))
+    # For "download all photos": every shipped photo, hall by hall, and their total size.
+    ship = [k for k in all_photos if k in have]
+    size = sum(os.path.getsize(f"{ROOT}/img/p/{k}.webp") for k in ship)
+    # When the articles were fetched (day in Malaysia, UTC+8) and how many: shown in Settings → About.
+    newest = max((os.path.getmtime(f"{CACHE}/art/{n}") for n in os.listdir(f"{CACHE}/art") if n.endswith(".html")), default=0)
+    fetched = time.strftime("%Y-%m-%d", time.gmtime(newest + 8 * 3600)) if newest else ""
+    json.dump({"fetched": fetched, "articles": stats["articles"], "bytes": size, "keys": ship},
+              open(f"{ROOT}/data/photos.json", "w"), separators=(",", ":"))
     print(json.dumps(stats))
     if "--photos" in sys.argv:
         convert_photos(all_photos)
+
+
+# Scientific names. The app italicizes a plain "Genus species" only when MOA itself
+# writes that genus as a scientific name somewhere: in italics, or followed by an
+# author such as "L." or "Thunb.". Epithets are kept too, for "C. japonica".
+AUTHOR = r"(?:\(?L\.\)?|Linn\.|Lam\.|Thunb\.|DC\.|Roxb\.|Merr\.|Hayata|Mill\.|Benth\.|Sieb\.|Zucc\.|Hook\.|Willd\.|Makino|Nakai|Blume|Hance|Maxim\.|Pers\.|Sacc\.|Fr\.|Burm\.|Kunth|Schott|Ait\.|Desf\.|Forssk\.|Poir\.|Spreng\.|Wall\.|Endl\.)"
+NOT_GENUS = {"Cucumber", "Tomato", "Tobacco", "Potato", "Pepper", "Bean", "Rice", "Maize", "Wheat", "Banana", "Papaya",
+             "Watermelon", "Squash", "Zucchini", "Lettuce", "Citrus tristeza", "Plum", "Apple", "Onion", "Garlic", "Turnip"}
+
+
+def sci_lexicon(texts):
+    genera, epithets = set(), set()
+    for t in texts:
+        found = [m.groups() for m in re.finditer(r"<(?:i|em)>\s*([A-Z][a-z]{2,})\s+([a-z]{3,})", t)]
+        plain = html.unescape(re.sub(r"<[^>]+>", " ", t))
+        found += [m.groups() for m in re.finditer(r"(?<![A-Za-z])([A-Z][a-z]{2,})\s+([a-z]{3,})\s+" + AUTHOR, plain)]
+        for g, e in found:
+            if g not in NOT_GENUS and e not in ("virus", "species", "spp", "and", "the"):
+                genera.add(g)
+                epithets.add(e)
+    return {"genera": sorted(genera), "epithets": sorted(epithets)}
 
 
 def keep_local_photos(art, have):

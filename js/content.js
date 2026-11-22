@@ -6,6 +6,7 @@
    be cached by another site, so only photos copied here work offline. */
 
 import { t2s } from './t2s.js';
+import { italicizeIn } from './sciname.js';
 
 const halls = new Map();
 
@@ -65,6 +66,7 @@ export function renderHtml(html, lang) {
     const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) n.nodeValue = t2s(n.nodeValue);
   }
+  italicizeIn(tpl.content);
   return tpl.content;
 }
 
@@ -110,3 +112,73 @@ export async function photosSaved(keys) {
   for (const k of keys) if (await cache.match(new URL(photoUrl(k), location.href).href)) n++;
   return n;
 }
+
+/* Hall text for offline reading: fetched in the background once the app runs
+   (the service worker keeps each response). A hall already stored is a quick
+   cache hit; one that fails is tried again next time. */
+export async function syncHalls(ids) {
+  const queue = [...ids];
+  const worker = async () => {
+    while (queue.length) {
+      const id = queue.shift();
+      try { const r = await fetch(`data/h/${id}.json`); if (r.ok) await r.blob(); } catch { /* offline */ }
+    }
+  };
+  await Promise.all([worker(), worker()]);
+}
+
+/* Every photo, for "download all photos". One job for the whole app: it can be
+   paused, and resumes on the next visit while the reader has it switched on. */
+const ALL_KEY = 'twagri.allPhotos';      // 'on' while the reader wants every photo offline
+const ASKED_KEY = 'twagri.askedPhotos';  // the first-visit question was answered
+
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+};
+
+export const allPhotos = {
+  wanted: () => store.get(ALL_KEY) === 'on',
+  asked: () => !!store.get(ASKED_KEY),
+  markAsked: () => store.set(ASKED_KEY, '1'),
+  state: { running: false, done: 0, total: 0, failed: 0, bytes: 0, finished: false },
+  listeners: new Set(),
+  emit() { for (const f of this.listeners) f(this.state); },
+  list: null,
+  async load() {
+    this.list ??= fetch('data/photos.json').then(r => r.json()).catch(e => { this.list = null; throw e; });
+    const l = await this.list;
+    this.state.bytes = l.bytes;
+    return l;
+  },
+  async start() {
+    if (this.state.running) return;
+    store.set(ALL_KEY, 'on');
+    navigator.storage?.persist?.().catch(() => {});
+    const { keys } = await this.load();
+    const cache = await caches.open('twagri-photos');
+    const have = new Set((await cache.keys()).map(r => r.url));
+    const base = new URL('img/p/', location.href).href;
+    const queue = keys.filter(k => !have.has(`${base}${k}.webp`));
+    Object.assign(this.state, { running: true, total: keys.length, done: keys.length - queue.length, failed: 0, finished: false });
+    this.emit();
+    const worker = async () => {
+      while (queue.length && this.state.running) {
+        const k = queue.shift();
+        try { const r = await fetch(photoUrl(k)); if (!r.ok) throw 0; await r.blob(); this.state.done++; }
+        catch { this.state.failed++; }
+        this.emit();
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    const complete = this.state.running && !queue.length;
+    this.state.running = false;
+    this.state.finished = complete && !this.state.failed;
+    this.emit();
+  },
+  pause() {
+    store.set(ALL_KEY, 'off');
+    this.state.running = false;
+    this.emit();
+  },
+};
