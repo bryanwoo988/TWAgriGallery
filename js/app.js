@@ -446,6 +446,12 @@ function renderSettings() {
   const p = prefs.get();
   const share = el('div', { class: 'share' });
   const W = window.WhatsNew;
+  // Article date and counts come from the build (data/photos.json), so they follow every data refresh.
+  const artDate = el('dd', {}, '…'), artCount = el('dd', {}, '…');
+  allPhotos.load().then(l => {
+    artDate.textContent = l.fetched || '—';
+    artCount.textContent = tr('contentsValue', { h: DATA.halls.length, a: fmt(l.articles), p: fmt(l.keys.length) });
+  }).catch(() => { artDate.textContent = artCount.textContent = '—'; });
   main.replaceChildren(el('div', { class: 'settings' },
     el('a', { class: 'back', href: '#/' }, '← ', tr('back')),
     el('h2', {}, tr('settings')),
@@ -480,6 +486,10 @@ function renderSettings() {
           el('button', { type: 'button', class: 'linkish', onclick: () => W?.history() }, tr('history'))),
         el('dt', {}, tr('dataDate')),
         el('dd', {}, DATA.fetched),
+        el('dt', {}, tr('articlesDate')),
+        artDate,
+        el('dt', {}, tr('contents')),
+        artCount,
         el('dt', {}, tr('source')),
         el('dd', {}, el('a', { href: MOA_LIST, target: '_blank', rel: 'noopener' }, 'kmweb.moa.gov.tw'))),
       el('p', { class: 'fine' }, tr('credit')))));
@@ -488,7 +498,6 @@ function renderSettings() {
 
 /* ---------- Updates ---------- */
 
-// Fetch the new service worker, wait until it controls the page, then reload.
 /* "Update now": fetch the new version and load it once its worker has taken
    over. Installing takes as long as the 6 MB app takes to download, so wait for
    it (up to a minute) instead of reloading into the old version. */

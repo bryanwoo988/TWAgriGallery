@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import time
 from html.parser import HTMLParser
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -339,7 +340,11 @@ def main():
     # For "download all photos": every shipped photo, hall by hall, and their total size.
     ship = [k for k in all_photos if k in have]
     size = sum(os.path.getsize(f"{ROOT}/img/p/{k}.webp") for k in ship)
-    json.dump({"bytes": size, "keys": ship}, open(f"{ROOT}/data/photos.json", "w"), separators=(",", ":"))
+    # When the articles were fetched (day in Malaysia, UTC+8) and how many: shown in Settings → About.
+    newest = max((os.path.getmtime(f"{CACHE}/art/{n}") for n in os.listdir(f"{CACHE}/art") if n.endswith(".html")), default=0)
+    fetched = time.strftime("%Y-%m-%d", time.gmtime(newest + 8 * 3600)) if newest else ""
+    json.dump({"fetched": fetched, "articles": stats["articles"], "bytes": size, "keys": ship},
+              open(f"{ROOT}/data/photos.json", "w"), separators=(",", ":"))
     print(json.dumps(stats))
     if "--photos" in sys.argv:
         convert_photos(all_photos)

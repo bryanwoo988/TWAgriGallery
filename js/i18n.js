@@ -127,6 +127,9 @@ export const STRINGS = {
   version: { en: 'Version', zht: '版本', zhs: '版本', ms: 'Versi' },
   history: { en: 'Update history', zht: '更新記錄', zhs: '更新记录', ms: 'Sejarah kemas kini' },
   dataDate: { en: 'Hall list fetched', zht: '主題館資料擷取日期', zhs: '主题馆资料撷取日期', ms: 'Senarai dewan diambil' },
+  articlesDate: { en: 'Articles and photos fetched', zht: '文章與照片擷取日期', zhs: '文章与照片撷取日期', ms: 'Artikel dan foto diambil' },
+  contents: { en: 'Contents', zht: '內容', zhs: '内容', ms: 'Kandungan' },
+  contentsValue: { en: '{h} halls · {a} articles · {p} photos', zht: '{h} 個主題館 · {a} 篇文章 · {p} 張照片', zhs: '{h} 个主题馆 · {a} 篇文章 · {p} 张照片', ms: '{h} dewan · {a} artikel · {p} foto' },
   source: { en: 'Source', zht: '資料來源', zhs: '资料来源', ms: 'Sumber' },
   credit: {
     en: 'Text and images: Ministry of Agriculture, Taiwan, Agricultural Knowledge Portal. Used with permission. Each article links to its original page.',
