@@ -696,10 +696,16 @@ async function start() {
   addEventListener('hashchange', render);
   render();
   try {
-    DATA = await (await fetch('data/halls.json')).json();
-    fetch('data/sci.json').then(r => r.json()).then(lex => { setLexicon(lex); render(); }).catch(() => {});
+    // The scientific-name list comes with the hall list, so the first full render
+    // already has it (rendering again later would knock the reader out of the search box).
+    const [halls, lex] = await Promise.all([
+      fetch('data/halls.json').then(r => r.json()),
+      fetch('data/sci.json').then(r => r.json()).catch(() => null),
+    ]);
+    DATA = halls;
+    if (lex) setLexicon(lex);
   } catch {
-    main.replaceChildren(el('p', { class: 'loading' }, 'Could not load data. Check your connection and reload.'));
+    main.replaceChildren(el('p', { class: 'loading' }, tr('loadFailed')));
     return;
   }
   render();

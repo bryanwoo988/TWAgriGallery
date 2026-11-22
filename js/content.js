@@ -8,15 +8,34 @@
 import { t2s } from './t2s.js';
 import { italicizeIn } from './sciname.js';
 
+/* Background downloads (hall text, photos) are only worth anything once the
+   service worker controls the page: before that, nothing they fetch is kept,
+   and on a first visit over a phone network that can take a while. */
+export function whenControlled() {
+  const sw = globalThis.navigator?.serviceWorker;
+  if (!sw) return Promise.reject(new Error('no service worker'));
+  if (sw.controller) return Promise.resolve();
+  return new Promise(resolve => sw.addEventListener('controllerchange', () => resolve(), { once: true }));
+}
+
+/* The halls opened most recently stay parsed in memory; the rest are let go
+   (all 157 together would be several hundred MB) and come back from the
+   offline cache when opened again. */
+const HALLS_KEPT = 6;
 const halls = new Map();
 
 export async function loadHall(id) {
-  if (!halls.has(id)) {
-    halls.set(id, fetch(`data/h/${id}.json`).then(r => {
-      if (!r.ok) throw new Error(`hall ${id}: ${r.status}`);
-      return r.json();
-    }).catch(e => { halls.delete(id); throw e; }));
+  if (halls.has(id)) {
+    const p = halls.get(id);
+    halls.delete(id);
+    halls.set(id, p);  // most recent last
+    return p;
   }
+  halls.set(id, fetch(`data/h/${id}.json`).then(r => {
+    if (!r.ok) throw new Error(`hall ${id}: ${r.status}`);
+    return r.json();
+  }).catch(e => { halls.delete(id); throw e; }));
+  while (halls.size > HALLS_KEPT) halls.delete(halls.keys().next().value);
   return halls.get(id);
 }
 
@@ -92,6 +111,7 @@ export function firstPhoto(a) {
 /* Saving a hall's photos: the service worker keeps every photo it serves in
    its photo cache, so fetching them all is enough. Progress goes to onStep. */
 export async function saveHallPhotos(keys, onStep = () => {}) {
+  await whenControlled();
   let done = 0, failed = 0;
   const queue = [...keys];
   const worker = async () => {
@@ -117,6 +137,7 @@ export async function photosSaved(keys) {
    (the service worker keeps each response). A hall already stored is a quick
    cache hit; one that fails is tried again next time. */
 export async function syncHalls(ids) {
+  await whenControlled();
   const queue = [...ids];
   const worker = async () => {
     while (queue.length) {
@@ -155,12 +176,26 @@ export const allPhotos = {
     if (this.state.running) return;
     store.set(ALL_KEY, 'on');
     navigator.storage?.persist?.().catch(() => {});
-    const { keys } = await this.load();
-    const cache = await caches.open('twagri-photos');
+    // Show the strip at once, even while waiting for the service worker.
+    Object.assign(this.state, { running: true, failed: 0, finished: false });
+    this.emit();
+    let keys, cache;
+    try {
+      ({ keys } = await this.load());
+      this.state.total = keys.length;
+      this.emit();
+      await whenControlled();
+      cache = await caches.open('twagri-photos');
+    } catch {  // no service worker or cache storage here: photos stay online-only
+      this.state.running = false;
+      this.emit();
+      return;
+    }
+    if (!this.state.running) return;  // paused while waiting
     const have = new Set((await cache.keys()).map(r => r.url));
     const base = new URL('img/p/', location.href).href;
     const queue = keys.filter(k => !have.has(`${base}${k}.webp`));
-    Object.assign(this.state, { running: true, total: keys.length, done: keys.length - queue.length, failed: 0, finished: false });
+    Object.assign(this.state, { total: keys.length, done: keys.length - queue.length });
     this.emit();
     const worker = async () => {
       while (queue.length && this.state.running) {
