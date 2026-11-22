@@ -16,8 +16,10 @@ export const MODES = ['auto', 'light', 'dark'];
 // `auto` follows the phone between the chosen light and dark look.
 export const LIGHT_LOOKS = ['classic', 'paper', 'mint', 'lavender'];
 export const DARK_LOOKS = ['midnight', 'oled', 'slate', 'grape'];
+// Text size: small, normal, large, extra large (scales everything sized in rem).
+export const SIZES = ['s', 'm', 'l', 'xl'];
 
-const DEFAULTS = () => ({ lang: 'en', mode: 'auto', light: 'classic', dark: 'midnight', visited: false });
+const DEFAULTS = () => ({ lang: 'en', mode: 'auto', light: 'classic', dark: 'midnight', size: 'm', visited: false });
 
 let state = DEFAULTS();
 let store = null;
@@ -33,6 +35,7 @@ export function sanitize(raw) {
     mode: pick(MODES, r.mode, d.mode),
     light: pick(LIGHT_LOOKS, r.light, d.light),
     dark: pick(DARK_LOOKS, r.dark, d.dark),
+    size: pick(SIZES, r.size, d.size),
     visited: r.visited === true,
   };
 }
@@ -73,6 +76,7 @@ export function applyToDocument(doc = document, prefersDark = globalThis.matchMe
   r.lang = HTML_LANG[state.lang];
   r.dataset.theme = side;
   r.dataset.look = look;
+  r.dataset.size = state.size;
   // The browser bar takes the page colour of the chosen look.
   const bg = doc.defaultView?.getComputedStyle?.(r).getPropertyValue('--bg').trim();
   if (bg) doc.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg));

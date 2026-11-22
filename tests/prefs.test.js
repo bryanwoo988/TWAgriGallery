@@ -6,7 +6,7 @@ const mem = (init = {}) => { const m = new Map(Object.entries(init)); return { g
 
 test('first visit: English, auto, classic/midnight', () => {
   const p = prefs.init(mem());
-  assert.deepEqual(p, { lang: 'en', mode: 'auto', light: 'classic', dark: 'midnight', visited: false });
+  assert.deepEqual(p, { lang: 'en', mode: 'auto', light: 'classic', dark: 'midnight', size: 'm', visited: false });
 });
 
 test('eight looks: four light, four dark', () => {

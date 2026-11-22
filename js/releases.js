@@ -6,6 +6,39 @@
 
 export const RELEASES = [
   {
+    v: '1.3.0', date: '2026-11-22', at: '2026-11-22T10:34:00Z',
+    notes: {
+      en: [
+        'Save articles with ☆, and find them again under "Saved & history" on the home page, with the articles you read recently.',
+        'The home page shows the last article you read, so you can carry on.',
+        'Text size: A− / A+ on every article, and Small to Extra large in Settings.',
+        'Share an article: its link opens straight to that article.',
+        'Long sections have their own search box and show 50 items at a time.',
+      ],
+      zht: [
+        '文章可以點 ☆ 收藏，在首頁「收藏與記錄」找回，也能看到最近看過的文章。',
+        '首頁顯示上次看到的文章，可以接著讀。',
+        '文字大小：每篇文章有 A− / A+，設定裡可選小到特大。',
+        '分享文章：對方打開連結就直接到那篇文章。',
+        '內容很多的單元有自己的搜尋框，每次顯示 50 項。',
+      ],
+      zh: [
+        '文章可以点 ☆ 收藏，在首页“收藏与记录”找回，也能看到最近看过的文章。',
+        '首页显示上次看到的文章，可以接着读。',
+        '文字大小：每篇文章有 A− / A+，设置里可选小到特大。',
+        '分享文章：对方打开链接就直接到那篇文章。',
+        '内容很多的单元有自己的搜索框，每次显示 50 项。',
+      ],
+      ms: [
+        'Simpan artikel dengan ☆, dan cari semula di bawah "Simpanan & sejarah" di halaman utama, bersama artikel yang baru dibaca.',
+        'Halaman utama menunjukkan artikel terakhir yang anda baca, supaya boleh sambung.',
+        'Saiz teks: A− / A+ pada setiap artikel, dan Kecil hingga Sangat besar dalam Tetapan.',
+        'Kongsi artikel: pautannya terus membuka artikel itu.',
+        'Bahagian yang panjang ada kotak carian sendiri dan menunjukkan 50 item setiap kali.',
+      ],
+    },
+  },
+  {
     v: '1.2.0', date: '2026-11-22', at: '2026-11-22T03:17:00Z',
     notes: {
       en: [

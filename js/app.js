@@ -15,6 +15,9 @@ import { renderShare } from './share.js';
 import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved, syncHalls, allPhotos } from './content.js';
 import { t2s } from './t2s.js';
 import { setLexicon, sciNodes } from './sciname.js';
+import { createLibrary } from './library.js';
+
+const library = createLibrary();
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
@@ -63,6 +66,7 @@ function route() {
   if ((m = h.match(/^\/s\/(\d+)\/(\d+)/))) return { name: 'section', hall: +m[1], id: +m[2] };
   if ((m = h.match(/^\/h\/(\d+)/))) return { name: 'hall', id: +m[1] };
   if (h.startsWith('/settings')) return { name: 'settings' };
+  if (h.startsWith('/me')) return { name: 'me' };
   const c = h.match(/^\/c\/([A-Z])/);
   return { name: 'list', cat: c && CAT_ORDER.includes(c[1]) ? c[1] : '' };
 }
@@ -83,6 +87,7 @@ async function render() {
     else if (r.name === 'section') await renderSection(r.hall, r.id, token);
     else if (r.name === 'article') await renderArticle(r.hall, r.id, token);
     else if (r.name === 'settings') renderSettings();
+    else if (r.name === 'me') renderMe();
     else renderList(r.cat);
   } catch (e) {
     if (token === renderToken) main.replaceChildren(el('p', { class: 'loading' }, tr('loadFailed')));
@@ -164,9 +169,14 @@ function renderList(cat) {
   input.addEventListener('input', () => { query = input.value; fill(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 
+  const last = library.last();
   const intro = el('section', { class: 'hero' },
     el('p', { class: 'hero-tag' }, tr('tagline')),
-    el('div', { class: 'search' }, el('span', { class: 'search-icon', 'aria-hidden': 'true' }), input));
+    el('div', { class: 'search' }, el('span', { class: 'search-icon', 'aria-hidden': 'true' }), input),
+    el('div', { class: 'me-row' },
+      last ? el('a', { class: 'continue', href: `#/a/${last.h}/${last.a}` },
+        el('span', { class: 'fine' }, tr('continueReading')), el('span', { class: 'continue-title' }, sciNodes(zh(last.t, L)))) : null,
+      el('a', { class: 'chip me-link', href: '#/me' }, '★ ', tr('myLibrary'))));
 
   main.replaceChildren(intro, chips, status, grid, arts);
   fill();
@@ -271,7 +281,7 @@ async function renderSection(hallId, sid, token) {
   if (token !== renderToken) return;
   const s = data.sections.find(x => x.id === sid);
   if (!s) { location.replace(`#/h/${hallId}`); return; }
-  const items = s.a.map(aid => {
+  const artRow = aid => {
     const a = data.articles[aid];
     const ph = firstPhoto(a);
     return el('li', {}, el('a', { class: 'art-row', href: `#/a/${hallId}/${aid}` },
@@ -279,16 +289,49 @@ async function renderSection(hallId, sid, token) {
       el('span', { class: 'art-text' },
         el('span', { class: 'art-title' }, sciNodes(zh(a.t, L))),
         el('span', { class: 'art-meta' }, a.qa ? tr('question') + ' · ' : '', a.upd || a.pub || ''))));
-  });
-  const online = (s.l || []).map(([t, u]) => el('li', {}, el('a', { href: u, ...EXT, class: 'ext' }, zh(t, L), ' ↗')));
+  };
+  const linkRow = ([t, u]) => el('li', {}, el('a', { href: u, ...EXT, class: 'ext' }, zh(t, L), ' ↗'));
+
+  // Long sections (one lists 4,457 news titles): a search box, and 50 rows at a time.
+  const PAGE = 50;
+  const artList = el('ul', { class: 'art-list rows' }), linkList = el('ul', { class: 'files online' });
+  const artMore = el('div'), linkMore = el('div');
+  const found = el('p', { class: 'fine', role: 'status' });
+  const linkHead = el('h3', { class: 'sub' }, tr('moreOnline'));
+  const matches = (title, q) => !q || title.includes(q) || t2s(title).includes(q) || title.toLowerCase().includes(q.toLowerCase());
+  let q = '';
+  const show = (list, more, all, row, n) => {
+    list.replaceChildren(...all.slice(0, n).map(row));
+    more.replaceChildren(all.length > n
+      ? el('button', { type: 'button', class: 'button', onclick: () => show(list, more, all, row, n + PAGE) }, tr('showMore', { n: Math.min(PAGE, all.length - n) }))
+      : '');
+  };
+  const fill = () => {
+    const arts = s.a.filter(aid => matches(data.articles[aid].t, q));
+    const links = (s.l || []).filter(([t]) => matches(t, q));
+    show(artList, artMore, arts, artRow, PAGE);
+    show(linkList, linkMore, links, linkRow, PAGE);
+    artList.hidden = !arts.length;
+    linkHead.hidden = linkList.hidden = !links.length;
+    found.textContent = q ? tr('nFound', { n: fmt(arts.length + links.length) }) : '';
+  };
+  const total = s.a.length + (s.l || []).length;
+  const box = total > 20 ? el('div', { class: 'search' }, el('span', { class: 'search-icon', 'aria-hidden': 'true' }),
+    el('input', {
+      type: 'search', class: 'search-input', placeholder: tr('filterSection'), 'aria-label': tr('filterSection'),
+      autocomplete: 'off', enterkeyhint: 'search',
+      oninput: e => { q = e.target.value.trim(); fill(); },
+      onkeydown: e => { if (e.key === 'Enter') e.target.blur(); },
+    })) : null;
+  fill();
   main.replaceChildren(el('div', { class: 'hall' },
     el('a', { class: 'back', href: `#/h/${hallId}` }, '← ', text(h.name, L)),
     el('h2', { class: 'page-title' }, zh(s.t, L)),
     s.a.length ? el('p', { class: 'fine' }, tr('nArticles', { n: s.a.length })) : null,
     chineseNote(),
-    s.a.length ? el('ul', { class: 'art-list rows' }, items) : null,
-    online.length ? el('h3', { class: 'sub' }, tr('moreOnline')) : null,
-    online.length ? el('ul', { class: 'files online' }, online) : null,
+    box, found,
+    artList, artMore,
+    linkHead, linkList, linkMore,
     el('p', {}, el('a', { href: sectionUrl(s.id), ...EXT, class: 'ext' }, tr('viewOnMoa'), ' ↗'))));
 }
 
@@ -324,11 +367,13 @@ async function renderArticle(hallId, aid, token) {
     el('div', { class: 'prose' }, renderHtml(x.body, L)),
     fileList(x.files)));
 
+  library.visit({ h: hallId, a: aid, t: a.t });
   main.replaceChildren(el('article', { class: 'hall reader' },
     el('a', { class: 'back', href: back }, '← ', backLabel),
     el('p', { class: 'kicker' }, el('a', { href: `#/h/${hallId}` }, text(h.name, L))),
     el('h2', { class: 'page-title' }, sciNodes(zh(a.t, L))),
     dates ? el('p', { class: 'fine' }, dates) : null,
+    articleTools(hallId, aid, a),
     chineseNote(),
     a.qa ? el('h3', { class: 'qa-label' }, tr('question')) : null,
     el('div', { class: 'prose' }, renderHtml(a.body, L)),
@@ -339,6 +384,53 @@ async function renderArticle(hallId, aid, token) {
       prev ? el('a', { href: `#/a/${hallId}/${prev}` }, '← ', zh(data.articles[prev].t, L)) : el('span'),
       next ? el('a', { href: `#/a/${hallId}/${next}`, class: 'next' }, zh(data.articles[next].t, L), ' →') : el('span')),
     el('p', { class: 'agency' }, tr('source'), ': ', el('a', { href: `https://kmweb.moa.gov.tw/subject/subject.php?id=${aid}`, ...EXT }, tr('viewOnMoa'), ' ↗'))));
+}
+
+// Save, share, and text size, under the article title.
+function articleTools(hallId, aid, a) {
+  const L = lang();
+  const star = el('button', { type: 'button', class: 'tool' });
+  const drawStar = on => {
+    star.replaceChildren(on ? '★ ' : '☆ ', tr(on ? 'savedArticle' : 'saveArticle'));
+    star.setAttribute('aria-pressed', on ? 'true' : 'false');
+  };
+  drawStar(library.isSaved(hallId, aid));
+  star.addEventListener('click', () => drawStar(library.toggle({ h: hallId, a: aid, t: a.t })));
+
+  const url = `${APP_URL}#/a/${hallId}/${aid}`;
+  const share = el('button', { type: 'button', class: 'tool' }, '↗ ', tr('shareArticle'));
+  share.addEventListener('click', async () => {
+    const title = zh(a.t, L);
+    if (navigator.share) { navigator.share({ title, url }).catch(() => {}); return; }
+    try { await navigator.clipboard.writeText(url); share.replaceChildren('✓ ', tr('copied')); } catch { prompt(tr('copyLink'), url); }
+  });
+
+  const i = prefs.SIZES.indexOf(prefs.get().size);
+  const step = d => () => prefs.set({ size: prefs.SIZES[Math.max(0, Math.min(prefs.SIZES.length - 1, i + d))] });
+  return el('div', { class: 'tools' }, star, share,
+    el('span', { class: 'tool-size' },
+      el('button', { type: 'button', class: 'tool', 'aria-label': tr('smaller'), title: tr('smaller'), disabled: i <= 0, onclick: step(-1) }, 'A−'),
+      el('button', { type: 'button', class: 'tool', 'aria-label': tr('larger'), title: tr('larger'), disabled: i >= prefs.SIZES.length - 1, onclick: step(1) }, 'A+')));
+}
+
+/* ---------- Saved & history ---------- */
+
+function renderMe() {
+  const L = lang();
+  const row = x => el('li', {}, el('a', { href: `#/a/${x.h}/${x.a}` },
+    el('span', { class: 'art-title' }, sciNodes(zh(x.t, L))),
+    el('span', { class: 'art-meta' }, text(hallById(x.h)?.name, L))));
+  const saved = library.saved(), recent = library.recent();
+  const clear = el('button', { type: 'button', class: 'button', onclick: () => { library.clearRecent(); render(); } }, tr('clearRecent'));
+  main.replaceChildren(el('div', { class: 'hall' },
+    el('a', { class: 'back', href: lastList }, '← ', tr('back')),
+    el('h2', { class: 'page-title' }, tr('myLibrary')),
+    el('p', { class: 'fine' }, tr('libraryNote')),
+    el('h3', { class: 'sub' }, '★ ', tr('savedTitle')),
+    saved.length ? el('ul', { class: 'art-list plain' }, saved.map(row)) : el('p', { class: 'fine' }, tr('noSaved')),
+    el('h3', { class: 'sub' }, tr('recentTitle')),
+    recent.length ? el('ul', { class: 'art-list plain' }, recent.map(row)) : el('p', { class: 'fine' }, tr('noRecent')),
+    recent.length ? clear : null));
 }
 
 /* ---------- Settings ---------- */
@@ -459,6 +551,10 @@ function renderSettings() {
     el('section', { class: 'panel' },
       el('h3', {}, tr('language')),
       seg(prefs.LANGS.map(l => [l, LANG_NAMES[l]]), p.lang, l => prefs.set({ lang: l }), tr('language'))),
+
+    el('section', { class: 'panel' },
+      el('h3', {}, tr('textSize')),
+      seg(prefs.SIZES.map(z => [z, tr('size_' + z)]), p.size, z => prefs.set({ size: z }), tr('textSize'))),
 
     el('section', { class: 'panel' },
       el('h3', {}, tr('appearance')),
