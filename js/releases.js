@@ -6,6 +6,27 @@
 
 export const RELEASES = [
   {
+    v: '1.4.0', date: '2026-11-22', at: '2026-11-22T11:04:00Z',
+    notes: {
+      en: [
+        'Search now looks inside the text of all 24,741 articles, offline, and shows where each one mentions your words. 繁體 and 简体 both work; several words must all appear.',
+        'The first search of a visit takes a few seconds while the articles are read; after that it is quick.',
+      ],
+      zht: [
+        '搜尋現在會找全部 24,741 篇文章的內容，離線也可以，並顯示文章裡提到的段落。繁體、簡體都能搜；輸入多個詞時要全部出現。',
+        '每次打開後第一次搜尋要幾秒鐘讀取文章，之後就很快。',
+      ],
+      zh: [
+        '搜索现在会找全部 24,741 篇文章的内容，离线也可以，并显示文章里提到的段落。繁体、简体都能搜；输入多个词时要全部出现。',
+        '每次打开后第一次搜索要几秒钟读取文章，之后就很快。',
+      ],
+      ms: [
+        'Carian kini mencari dalam teks kesemua 24,741 artikel, luar talian, dan menunjukkan di mana setiap artikel menyebut perkataan anda. 繁體 dan 简体 kedua-duanya boleh; beberapa perkataan mesti semuanya ada.',
+        'Carian pertama setiap kali dibuka mengambil beberapa saat untuk membaca artikel; selepas itu ia pantas.',
+      ],
+    },
+  },
+  {
     v: '1.3.0', date: '2026-11-22', at: '2026-11-22T10:34:00Z',
     notes: {
       en: [
