@@ -6,6 +6,27 @@
 
 export const RELEASES = [
   {
+    v: '1.5.1', date: '2026-11-23', at: '2026-11-22T20:07:00Z',
+    notes: {
+      en: [
+        "Content update from MOA: 4 new articles, 24,742 in all (fetched 2026-11-23).",
+        "3 articles MOA no longer lists were removed.",
+      ],
+      zht: [
+        "農業部內容更新：新增 4 篇文章，共 24,742 篇（2026-11-23 擷取）。",
+        "移除 3 篇農業部已不再列出的文章。",
+      ],
+      zh: [
+        "农业部内容更新：新增 4 篇文章，共 24,742 篇（2026-11-23 撷取）。",
+        "移除 3 篇农业部已不再列出的文章。",
+      ],
+      ms: [
+        "Kemas kini kandungan daripada MOA: 4 artikel baharu, 24,742 kesemuanya (diambil 2026-11-23).",
+        "3 artikel yang tidak lagi disenaraikan oleh MOA telah dibuang.",
+      ],
+    },
+  },
+  {
     v: '1.5.0', date: '2026-11-22', at: '2026-11-22T13:53:00Z',
     notes: {
       en: [
