@@ -68,9 +68,13 @@ def fetch(url, path, binary=False):
         return open(path, mode, **({} if binary else {"encoding": "utf-8"})).read(), final
     err = None
     for attempt in range(5):
+        wait = None
         try:
             r = get_following(url)
             if r.status_code == 429 or r.status_code >= 500:
+                # Wait as long as MOA asks, when it says (seconds), up to two minutes.
+                ra = r.headers.get("Retry-After", "")
+                wait = min(int(ra), 120) if ra.isdigit() else None
                 raise RuntimeError(f"HTTP {r.status_code}")
             if r.status_code != 200:
                 return None, f"HTTP {r.status_code}"
@@ -79,7 +83,7 @@ def fetch(url, path, binary=False):
         except Exception as e:  # proxy hiccups, rate limits (429) and timeouts: back off and retry
             err = e
             print(f"  retry {attempt + 1} {url}: {str(e)[:120]}", flush=True)
-            time.sleep((15 if "429" in str(e) else 4) * (attempt + 1))
+            time.sleep(wait if wait is not None else (15 if "429" in str(e) else 4) * (attempt + 1))
     else:
         return None, str(err)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -149,6 +153,12 @@ def run(step):
     fails = []
     if step == "lists":
         sids = sorted({s for h in halls() for s in section_ids(h)})
+        # --shard i/n: only every n-th section, starting at i. The monthly refresh runs
+        # n shards on separate GitHub machines: MOA throttles each address, not the total.
+        shard = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--shard=")), "")
+        if shard:
+            i, n = map(int, shard.split("/"))
+            sids = sids[i::n]
         print(f"{len(sids)} sections", flush=True)
         with ThreadPoolExecutor(WORKERS) as ex:
             for i, f in enumerate(ex.map(crawl_section, sids)):

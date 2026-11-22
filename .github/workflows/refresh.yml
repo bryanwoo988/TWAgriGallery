@@ -4,7 +4,12 @@ name: Monthly content refresh
 # that are new since the last refresh (articles already in the app keep their
 # stored text), add their photos, write a release note, test, commit to main
 # and deploy. If nothing changed, nothing is committed. Runs at night in
-# Malaysia and Taiwan, one request at a time (MOA answers 429 to parallel ones).
+# Malaysia and Taiwan.
+#
+# MOA throttles each address hard (from GitHub about 7 pages a minute, so one
+# machine would need some 9 hours for the lists). The lists are therefore read
+# by 6 machines, each one request at a time and each a sixth of the sections;
+# a final job merges their pages and does the rest.
 #
 # Guards: tools/add_release.py refuses a build that lost more than 5% of its
 # articles, npm test checks every article and photo, and the site must stay
@@ -25,9 +30,40 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  lists:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Python packages
+        run: pip install requests
+
+      - name: Section lists, part ${{ matrix.shard }} of 6
+        run: python3 tools/crawl.py lists --shard=${{ matrix.shard }}/6
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: sec-${{ matrix.shard }}
+          path: .cache/moa/sec
+          include-hidden-files: true
+          retention-days: 3
+
+  refresh:
+    needs: lists
+    # A part that failed leaves its sections as they were (build_articles.py reuses them).
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
     outputs:
       changed: ${{ steps.release.outputs.changed }}
     steps:
@@ -44,8 +80,14 @@ jobs:
       - name: Python packages
         run: pip install requests pillow
 
-      - name: Section lists (about an hour)
-        run: python3 tools/crawl.py lists
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sec-*
+          merge-multiple: true
+          path: .cache/moa/sec
+
+      - name: Pages read
+        run: ls .cache/moa/sec | grep -c 'html$'
 
       - name: New articles only
         run: python3 tools/crawl.py articles --new
