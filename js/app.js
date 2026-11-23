@@ -686,6 +686,17 @@ function setupUpdates(firstVisit) {
 
 /* ---------- Start ---------- */
 
+// The launch screen in index.html stays until the first page has rendered, then fades out.
+function hideSplash() {
+  const s = document.getElementById('splash');
+  if (!s) return;
+  requestAnimationFrame(() => {
+    s.classList.add('is-done');
+    setTimeout(() => s.remove(), 400);
+  });
+}
+
+
 async function start() {
   const p = prefs.init();
   const firstVisit = !p.visited;
@@ -706,9 +717,11 @@ async function start() {
     if (lex) setLexicon(lex);
   } catch {
     main.replaceChildren(el('p', { class: 'loading' }, tr('loadFailed')));
+    hideSplash();
     return;
   }
-  render();
+  await render();  // a hall or article opened from a link waits for its file
+  hideSplash();
   setupUpdates(firstVisit);
   photoStrip();
   // Hall text first (37 MB, small next to photos), then photos if the reader asked for them.

@@ -35,7 +35,8 @@ export function plan(root = ROOT) {
   const all = [
     ...FILES.filter(f => existsSync(join(root, f))),
     ...DIRS.filter(d => existsSync(join(root, d))).flatMap(d => walk(root, d)),
-  ].sort();
+  ].filter(f => !f.startsWith('icons/splash/')).sort();  // iOS launch images: fetched once, at "Add to Home Screen"
+
   const files = all.filter(f => !IS_CONTENT(f));
   const content = all.filter(IS_CONTENT);
   const hash = createHash('sha256');

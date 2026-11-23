@@ -13,6 +13,27 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Agri Gallery">
+  <!-- iOS launch images, one per screen size (tools/make-splash.cjs) -->
+  <link rel="apple-touch-startup-image" href="icons/splash/1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/2064x2752.png" media="(device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1668x2420.png" media="(device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1640x2360.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1620x2160.png" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="icons/splash/1488x2266.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <link rel="stylesheet" href="css/app.css">
   <script>
     /* Apply the saved look before first paint, so a dark-mode reader never sees a white flash. */
@@ -30,6 +51,27 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+  <!-- Launch screen: shown from the first paint until the first page is ready (js/app.js hides it). -->
+  <div id="splash" role="status" aria-live="polite">
+    <img class="splash-mark" src="icons/icon.svg" alt="" width="96" height="96">
+    <p class="splash-name" id="splash-name">Taiwan Agri Gallery</p>
+    <p class="splash-sub" id="splash-sub">臺灣農業主題館</p>
+    <div class="splash-bar" aria-hidden="true"><i></i></div>
+  </div>
+  <script>
+    /* The launch screen in the reader's language, before any module loads. */
+    (function () {
+      var N = { en: ['Taiwan Agri Gallery', '臺灣農業主題館'], zht: ['臺灣農業主題館', 'Taiwan Agri Gallery'],
+                zhs: ['台湾农业主题馆', 'Taiwan Agri Gallery'], ms: ['Galeri Pertanian Taiwan', '臺灣農業主題館'] };
+      var lang = 'en';
+      try { lang = JSON.parse(localStorage.getItem('twagri.prefs.v1') || '{}').lang || 'en'; } catch (e) {}
+      var n = N[lang] || N.en;
+      document.getElementById('splash-name').textContent = n[0];
+      document.getElementById('splash-sub').textContent = n[1];
+      // Never stuck: gone after 8 s even if something failed to load.
+      setTimeout(function () { var s = document.getElementById('splash'); if (s) s.remove(); }, 8000);
+    })();
+  </script>
   <header class="topbar">
     <a class="brand" href="#/">
       <img class="brand-mark" src="icons/icon.svg" alt="" width="32" height="32">

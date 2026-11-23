@@ -6,6 +6,27 @@
 
 export const RELEASES = [
   {
+    v: '1.6.0', date: '2026-11-23', at: '2026-11-23T00:18:00Z',
+    notes: {
+      en: [
+        'A launch screen with the app icon and name, in your language and your light or dark look, shows until the first page is ready.',
+        'On iPhone and iPad, the app added to the Home Screen now opens on that launch screen instead of a blank white one.',
+      ],
+      zht: [
+        '新增啟動畫面：顯示應用程式圖示和名稱，配合你選的語言和淺色／深色外觀，直到第一頁準備好。',
+        '在 iPhone、iPad 主畫面打開時，會先看到啟動畫面，不再是一片空白。',
+      ],
+      zh: [
+        '新增启动画面：显示应用程序图标和名称，配合你选的语言和浅色／深色外观，直到第一页准备好。',
+        '在 iPhone、iPad 主屏幕打开时，会先看到启动画面，不再是一片空白。',
+      ],
+      ms: [
+        'Skrin pelancaran dengan ikon dan nama aplikasi, dalam bahasa dan rupa terang atau gelap pilihan anda, dipaparkan sehingga halaman pertama sedia.',
+        'Di iPhone dan iPad, aplikasi pada Skrin Utama kini dibuka dengan skrin pelancaran itu dan bukan skrin putih kosong.',
+      ],
+    },
+  },
+  {
     v: '1.5.2', date: '2026-11-23', at: '2026-11-22T21:21:00Z',
     notes: {
       en: [
