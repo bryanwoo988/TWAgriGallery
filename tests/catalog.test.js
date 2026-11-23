@@ -37,3 +37,21 @@ test('the second name is the MOA original for en/ms, English for Chinese', () =>
   assert.equal(sectionText({ zht: '採後處理', zhs: '采后处理' }, 'zhs'), '采后处理');
   assert.equal(sectionText({ zht: '採後處理', zhs: '采后处理' }, 'en'), '採後處理');
 });
+
+test('section titles: English/Malay from the translation table, Chinese as MOA writes it', async () => {
+  const { setSectionNames } = await import('../js/catalog.js');
+  const { readFileSync } = await import('node:fs');
+  const names = JSON.parse(readFileSync(new URL('../data/sections-i18n.json', import.meta.url), 'utf8'));
+  setSectionNames(names);
+  const o = { zht: '病害防治', zhs: '病害防治' };
+  assert.equal(sectionText(o, 'en'), 'Disease control');
+  assert.equal(sectionText(o, 'ms'), 'Kawalan penyakit');
+  assert.equal(sectionText(o, 'zht'), '病害防治');
+  assert.equal(sectionText({ zht: '從未翻譯的標題' }, 'en'), '從未翻譯的標題');  // falls back to MOA's title
+  // every section in the hall list has both translations, with no Chinese left in them
+  const { halls } = JSON.parse(readFileSync(new URL('../data/halls.json', import.meta.url), 'utf8'));
+  for (const h of halls) for (const g of h.groups) for (const t of [g.zht, ...g.items.map(i => i.zht)]) {
+    assert.ok(names[t], `no translation: ${t}`);
+    for (const x of names[t]) assert.ok(!/[㐀-鿿]/.test(x), `${t} -> ${x}`);
+  }
+});

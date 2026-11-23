@@ -8,7 +8,7 @@
 
 import * as prefs from './prefs.js';
 import { t, LANG_NAMES } from './i18n.js';
-import { text, sectionText, filterHalls, countByCat, norm } from './catalog.js';
+import { text, sectionText, setSectionNames, filterHalls, countByCat, norm } from './catalog.js';
 import { APP_URL, MOA_LIST, hallUrl, sectionUrl, PREFIX } from './config.js';
 import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
@@ -365,7 +365,7 @@ async function renderSection(hallId, sid, token) {
   fill();
   main.replaceChildren(el('div', { class: 'hall' },
     el('a', { class: 'back', href: `#/h/${hallId}` }, '← ', text(h.name, L)),
-    el('h2', { class: 'page-title' }, zh(s.t, L)),
+    el('h2', { class: 'page-title' }, sectionText({ zht: s.t, zhs: t2s(s.t) }, L)),
     s.a.length ? el('p', { class: 'fine' }, tr('nArticles', { n: s.a.length })) : null,
     chineseNote(),
     box, found,
@@ -387,7 +387,7 @@ async function renderArticle(hallId, aid, token) {
   if (!a) { location.replace(`#/h/${hallId}`); return; }
   const sec = data.sections.find(x => x.a.includes(aid));
   const back = sec && sec.a.length > 1 ? `#/s/${hallId}/${sec.id}` : `#/h/${hallId}`;
-  const backLabel = sec && sec.a.length > 1 ? zh(sec.t, L) : text(h.name, L);
+  const backLabel = sec && sec.a.length > 1 ? sectionText({ zht: sec.t, zhs: t2s(sec.t) }, L) : text(h.name, L);
 
   // Previous / next within the section.
   const i = sec ? sec.a.indexOf(aid) : -1;
@@ -707,12 +707,14 @@ async function start() {
   try {
     // The scientific-name list comes with the hall list, so the first full render
     // already has it (rendering again later would knock the reader out of the search box).
-    const [halls, lex] = await Promise.all([
+    const [halls, lex, names] = await Promise.all([
       fetch('data/halls.json').then(r => r.json()),
       fetch('data/sci.json').then(r => r.json()).catch(() => null),
+      fetch('data/sections-i18n.json').then(r => r.json()).catch(() => null),
     ]);
     DATA = halls;
     if (lex) setLexicon(lex);
+    if (names) setSectionNames(names);
   } catch {
     main.replaceChildren(el('p', { class: 'loading' }, tr('loadFailed')));
     hideSplash();
