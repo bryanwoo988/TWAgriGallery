@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.7.0', date: '2026-11-23', at: '2026-11-23T04:05:00Z',
+    notes: {
+      en: [
+        'In English and Malay, all 3,884 section titles of the halls are now in your language. Article titles and text are still in Chinese, as MOA publishes them.',
+      ],
+      zht: [
+        '英文和馬來文介面下，各主題館的 3,884 個單元名稱都已翻成該語言。文章標題和內文仍是農業部發布的中文。',
+      ],
+      zh: [
+        '英文和马来文界面下，各主题馆的 3,884 个单元名称都已翻成该语言。文章标题和内文仍是农业部发布的中文。',
+      ],
+      ms: [
+        'Dalam bahasa Inggeris dan Melayu, kesemua 3,884 tajuk bahagian dewan kini dalam bahasa anda. Tajuk dan teks artikel masih dalam bahasa Cina seperti yang diterbitkan oleh MOA.',
+      ],
+    },
+  },
+  {
     v: '1.6.1', date: '2026-11-23', at: '2026-11-23T03:42:00Z',
     notes: {
       en: [

@@ -7,8 +7,19 @@ export function text(obj, lang) {
   return obj[lang] || obj.en || obj.zht || '';
 }
 
+// English and Malay names of MOA's section titles (data/sections-i18n.json:
+// {繁體 title: [en, ms]}); MOA writes them only in Chinese.
+let SECTION_NAMES = {};
+export function setSectionNames(map) { SECTION_NAMES = map || {}; }
+
+// A section title in the reader's language. obj: {zht, zhs?}.
 export function sectionText(obj, lang) {
-  return (lang === 'zhs' ? obj.zhs : obj.zht) || obj.zht || '';
+  const zht = obj.zht || '';
+  if (lang === 'en' || lang === 'ms') {
+    const t = SECTION_NAMES[zht];
+    if (t) return t[lang === 'en' ? 0 : 1] || zht;
+  }
+  return (lang === 'zhs' ? obj.zhs : zht) || zht;
 }
 
 const COLLATOR = {
