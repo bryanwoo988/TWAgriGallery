@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* iOS launch images (apple-touch-startup-image): iOS shows a blank screen at
    launch unless the page lists one image per screen size. This draws the same
-   launch screen as index.html (icon, 臺灣農業主題館, Taiwan Agri Gallery on the
-   Classic background) at each size with Playwright, writes icons/splash/*.png
+   launch screen as index.html (the icon alone: iOS cannot know the reader's
+   language, and the app shows one language only, on the Classic background) at each size with Playwright, writes icons/splash/*.png
    and prints the <link> tags for index.html.
 
      node tools/make-splash.cjs
@@ -27,7 +27,7 @@ const page = `<!doctype html><meta charset="utf-8"><style>
     font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", sans-serif; color: #17211a; text-align: center; }
   img { width: 96px; height: 96px; border-radius: 22px; margin-bottom: 14px; box-shadow: 0 8px 28px rgb(0 0 0 / .12); }
   .n { font-size: 21.6px; font-weight: 700; } .s { font-size: 15.2px; color: #5f6c62; }
-</style><img src="${icon}"><div class="n">臺灣農業主題館</div><div class="s">Taiwan Agri Gallery</div>`;
+</style><img src="${icon}">`;
 
 (async () => {
   mkdirSync(join(ROOT, 'icons/splash'), { recursive: true });

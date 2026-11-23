@@ -8,7 +8,7 @@
 
 import * as prefs from './prefs.js';
 import { t, LANG_NAMES } from './i18n.js';
-import { text, sectionText, altName, filterHalls, countByCat, norm } from './catalog.js';
+import { text, sectionText, filterHalls, countByCat, norm } from './catalog.js';
 import { APP_URL, MOA_LIST, hallUrl, sectionUrl, PREFIX } from './config.js';
 import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
@@ -117,8 +117,7 @@ function card(h) {
     el('div', { class: 'card-body' },
       el('span', { class: 'hall-icon', 'aria-hidden': 'true', style: iconStyle(h.id) }),
       el('div', { class: 'card-text' },
-        el('h3', { class: 'card-title' }, text(h.name, L)),
-        el('p', { class: 'card-alt' }, altName(h, L)))));
+        el('h3', { class: 'card-title' }, text(h.name, L)))));
 }
 
 // Articles whose title contains every search term (either script).
@@ -275,7 +274,6 @@ async function renderHall(id, token) {
       el('span', { class: 'hall-icon big', 'aria-hidden': 'true', style: iconStyle(h.id) }),
       el('div', {},
         el('h2', { class: 'hall-title' }, text(h.name, L)),
-        el('p', { class: 'hall-alt' }, altName(h, L)),
         el('p', { class: 'hall-cats' }, h.cats.map(c => el('a', { class: 'tag', href: `#/c/${c}` }, text(DATA.categories[c], L)))))),
     el('section', { class: 'panel' },
       el('h3', {}, tr('overview')),

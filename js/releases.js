@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.6.1', date: '2026-11-23', at: '2026-11-23T03:42:00Z',
+    notes: {
+      en: [
+        'The app now shows one language at a time: hall names no longer carry a second name in another language, and the launch screen shows only the name in your language.',
+      ],
+      zht: [
+        '應用程式一次只顯示一種語言：主題館名稱不再附上另一種語言的名稱，啟動畫面也只顯示你選的語言。',
+      ],
+      zh: [
+        '应用程序一次只显示一种语言：主题馆名称不再附上另一种语言的名称，启动画面也只显示你选的语言。',
+      ],
+      ms: [
+        'Aplikasi kini memaparkan satu bahasa pada satu masa: nama dewan tidak lagi disertai nama dalam bahasa lain, dan skrin pelancaran hanya menunjukkan nama dalam bahasa anda.',
+      ],
+    },
+  },
+  {
     v: '1.6.0', date: '2026-11-23', at: '2026-11-23T00:18:00Z',
     notes: {
       en: [
@@ -97,7 +114,7 @@ export const RELEASES = [
     v: '1.4.0', date: '2026-11-22', at: '2026-11-22T11:04:00Z',
     notes: {
       en: [
-        'Search now looks inside the text of all 24,741 articles, offline, and shows where each one mentions your words. 繁體 and 简体 both work; several words must all appear.',
+        'Search now looks inside the text of all 24,741 articles, offline, and shows where each one mentions your words. Traditional and Simplified Chinese both work; several words must all appear.',
         'The first search of a visit takes a few seconds while the articles are read; after that it is quick.',
       ],
       zht: [
@@ -109,7 +126,7 @@ export const RELEASES = [
         '每次打开后第一次搜索要几秒钟读取文章，之后就很快。',
       ],
       ms: [
-        'Carian kini mencari dalam teks kesemua 24,741 artikel, luar talian, dan menunjukkan di mana setiap artikel menyebut perkataan anda. 繁體 dan 简体 kedua-duanya boleh; beberapa perkataan mesti semuanya ada.',
+        'Carian kini mencari dalam teks kesemua 24,741 artikel, luar talian, dan menunjukkan di mana setiap artikel menyebut perkataan anda. Cina Tradisional dan Cina Ringkas kedua-duanya boleh; beberapa perkataan mesti semuanya ada.',
         'Carian pertama setiap kali dibuka mengambil beberapa saat untuk membaca artikel; selepas itu ia pantas.',
       ],
     },
@@ -180,7 +197,7 @@ export const RELEASES = [
     v: '1.1.0', date: '2026-11-22', at: '2026-11-21T23:54:00Z',
     notes: {
       en: [
-        'The full text of 24,741 MOA articles is now inside the app and reads offline (in Chinese; 简体 is converted on the phone).',
+        'The full text of 24,741 MOA articles is now inside the app and reads offline (in Chinese; Simplified Chinese is converted on the phone).',
         'Search finds article titles as well as halls.',
         'Each hall has a button to save its photos for offline reading. Settings shows how much is stored.',
         'News reprints, outside links and files are listed by title and open on the MOA site.',
@@ -211,7 +228,7 @@ export const RELEASES = [
       en: [
         'First release: all 157 theme halls of Taiwan\'s Ministry of Agriculture, in 8 categories.',
         'Each hall has its picture, an overview, its section menu and links to the original MOA pages.',
-        'English, 繁體中文, 简体中文 and Bahasa Melayu; 8 appearances; works offline; QR code to share.',
+        'English, Traditional Chinese, Simplified Chinese and Malay; 8 appearances; works offline; QR code to share.',
       ],
       zht: [
         '第一版：收錄農業部 157 個主題館，分 8 大類。',
@@ -226,7 +243,7 @@ export const RELEASES = [
       ms: [
         'Keluaran pertama: kesemua 157 dewan tema Kementerian Pertanian Taiwan, dalam 8 kategori.',
         'Setiap dewan ada gambar, gambaran, menu bahagian dan pautan ke halaman asal MOA.',
-        'English, 繁體中文, 简体中文 dan Bahasa Melayu; 8 penampilan; berfungsi luar talian; kod QR untuk berkongsi.',
+        'Bahasa Inggeris, Cina Tradisional, Cina Ringkas dan Bahasa Melayu; 8 penampilan; berfungsi luar talian; kod QR untuk berkongsi.',
       ],
     },
   },

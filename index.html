@@ -55,19 +55,16 @@
   <div id="splash" role="status" aria-live="polite">
     <img class="splash-mark" src="icons/icon.svg" alt="" width="96" height="96">
     <p class="splash-name" id="splash-name">Taiwan Agri Gallery</p>
-    <p class="splash-sub" id="splash-sub">臺灣農業主題館</p>
     <div class="splash-bar" aria-hidden="true"><i></i></div>
   </div>
   <script>
     /* The launch screen in the reader's language, before any module loads. */
     (function () {
-      var N = { en: ['Taiwan Agri Gallery', '臺灣農業主題館'], zht: ['臺灣農業主題館', 'Taiwan Agri Gallery'],
-                zhs: ['台湾农业主题馆', 'Taiwan Agri Gallery'], ms: ['Galeri Pertanian Taiwan', '臺灣農業主題館'] };
+      // Only the reader's language (en is the default), as in js/i18n.js appName.
+      var N = { en: 'Taiwan Agri Gallery', zht: '臺灣農業主題館', zhs: '台湾农业主题馆', ms: 'Galeri Pertanian Taiwan' };
       var lang = 'en';
       try { lang = JSON.parse(localStorage.getItem('twagri.prefs.v1') || '{}').lang || 'en'; } catch (e) {}
-      var n = N[lang] || N.en;
-      document.getElementById('splash-name').textContent = n[0];
-      document.getElementById('splash-sub').textContent = n[1];
+      document.getElementById('splash-name').textContent = N[lang] || N.en;
       // Never stuck: gone after 8 s even if something failed to load.
       setTimeout(function () { var s = document.getElementById('splash'); if (s) s.remove(); }, 8000);
     })();

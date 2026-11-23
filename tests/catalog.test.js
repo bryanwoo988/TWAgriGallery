@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { filterHalls, text, altName, sectionText, countByCat } from '../js/catalog.js';
+import { filterHalls, text, sectionText, countByCat } from '../js/catalog.js';
 
 const { halls } = JSON.parse(readFileSync(new URL('../data/halls.json', import.meta.url), 'utf8'));
 const titles = (list, l = 'en') => list.map(h => text(h.name, l));
@@ -34,8 +34,6 @@ test('English list is alphabetical', () => {
 
 test('the second name is the MOA original for en/ms, English for Chinese', () => {
   const h = halls.find(x => x.id === 19);
-  assert.equal(altName(h, 'en'), '芒果主題館');
-  assert.equal(altName(h, 'zhs'), 'Mango');
   assert.equal(sectionText({ zht: '採後處理', zhs: '采后处理' }, 'zhs'), '采后处理');
   assert.equal(sectionText({ zht: '採後處理', zhs: '采后处理' }, 'en'), '採後處理');
 });
