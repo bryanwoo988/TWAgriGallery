@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.8.1', date: '2026-11-23', at: '2026-11-23T04:34:00Z',
+    notes: {
+      en: [
+        'More article titles in English and Malay: 2,950 are now translated (up from 550).',
+      ],
+      zht: [
+        '更多文章標題已翻成英文和馬來文：目前完成 2,950 個（原本 550 個）。',
+      ],
+      zh: [
+        '更多文章标题已翻成英文和马来文：目前完成 2,950 个（原本 550 个）。',
+      ],
+      ms: [
+        'Lebih banyak tajuk artikel dalam bahasa Inggeris dan Melayu: 2,950 kini sudah diterjemah (daripada 550).',
+      ],
+    },
+  },
+  {
     v: '1.8.0', date: '2026-11-23', at: '2026-11-23T04:10:00Z',
     notes: {
       en: [
