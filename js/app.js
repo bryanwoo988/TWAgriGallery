@@ -12,7 +12,7 @@ import { text, sectionText, setSectionNames, filterHalls, countByCat, norm } fro
 import { APP_URL, MOA_LIST, hallUrl, sectionUrl, PREFIX } from './config.js';
 import { RELEASES, VERSION } from './releases.js';
 import { renderShare } from './share.js';
-import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved, syncHalls, allPhotos } from './content.js';
+import { loadHall, loadIndex, zh, renderHtml, photoUrl, hallPhotos, firstPhoto, saveHallPhotos, photosSaved, syncHalls, allPhotos, titleText, setTitles, translatedTitles } from './content.js';
 import { t2s } from './t2s.js';
 import { setLexicon, sciNodes } from './sciname.js';
 import { createLibrary } from './library.js';
@@ -126,7 +126,10 @@ const foldedTitles = new WeakMap();
 export function searchArticles(index, q, max = 60) {
   const terms = ftTerms(norm(q));
   if (!terms.length || terms.join('').length < 2) return [];
-  if (!foldedTitles.has(index)) foldedTitles.set(index, index.map(row => fold(norm(row[3]))));
+  if (!foldedTitles.has(index)) {
+    const tr = translatedTitles();
+    foldedTitles.set(index, index.map(row => fold(norm([row[3], ...(tr[row[3]] || [])].join(' ')))));
+  }
   const titles = foldedTitles.get(index);
   const out = [];
   for (let i = 0; i < index.length; i++) {
@@ -181,7 +184,7 @@ function renderList(cat) {
       arts.append(el('h2', { class: 'sub' }, tr('articleResults', { n: hits.length })),
         el('ul', { class: 'art-list' }, hits.map(([aid, hid, , title]) => el('li', {},
           el('a', { href: `#/a/${hid}/${aid}` },
-            el('span', { class: 'art-title' }, sciNodes(zh(title, L))),
+            el('span', { class: 'art-title' }, sciNodes(titleText(title, L))),
             el('span', { class: 'art-meta' }, text(hallById(hid)?.name, L)))))));
     }
     // Then the article text, a moment after typing stops.
@@ -202,7 +205,7 @@ function renderList(cat) {
       res.total > res.results.length ? el('p', { class: 'fine' }, tr('fullShown', { n: res.results.length })) : null,
       el('ul', { class: 'art-list' }, rows.map(r => el('li', {},
         el('a', { href: `#/a/${r.h}/${r.a}` },
-          el('span', { class: 'art-title' }, sciNodes(zh(r.t, L))),
+          el('span', { class: 'art-title' }, sciNodes(titleText(r.t, L))),
           el('span', { class: 'snippet' }, zh(r.snip[0], L), el('mark', {}, zh(r.snip[1], L)), zh(r.snip[2], L)),
           el('span', { class: 'art-meta' }, text(hallById(r.h)?.name, L)))))));
   };
@@ -215,7 +218,7 @@ function renderList(cat) {
     el('div', { class: 'search' }, el('span', { class: 'search-icon', 'aria-hidden': 'true' }), input),
     el('div', { class: 'me-row' },
       last ? el('a', { class: 'continue', href: `#/a/${last.h}/${last.a}` },
-        el('span', { class: 'fine' }, tr('continueReading')), el('span', { class: 'continue-title' }, sciNodes(zh(last.t, L)))) : null,
+        el('span', { class: 'fine' }, tr('continueReading')), el('span', { class: 'continue-title' }, sciNodes(titleText(last.t, L)))) : null,
       el('a', { class: 'chip me-link', href: '#/me' }, '★ ', tr('myLibrary'))));
 
   main.replaceChildren(intro, chips, status, grid, arts);
@@ -326,7 +329,7 @@ async function renderSection(hallId, sid, token) {
     return el('li', {}, el('a', { class: 'art-row', href: `#/a/${hallId}/${aid}` },
       ph ? el('img', { class: 'thumb', src: photoUrl(ph), alt: '', loading: 'lazy', decoding: 'async' }) : el('span', { class: 'thumb none', style: iconStyle(hallId) }),
       el('span', { class: 'art-text' },
-        el('span', { class: 'art-title' }, sciNodes(zh(a.t, L))),
+        el('span', { class: 'art-title' }, sciNodes(titleText(a.t, L))),
         el('span', { class: 'art-meta' }, a.qa ? tr('question') + ' · ' : '', a.upd || a.pub || ''))));
   };
   const linkRow = ([t, u]) => el('li', {}, el('a', { href: u, ...EXT, class: 'ext' }, zh(t, L), ' ↗'));
@@ -346,7 +349,7 @@ async function renderSection(hallId, sid, token) {
       : '');
   };
   const fill = () => {
-    const arts = s.a.filter(aid => matches(data.articles[aid].t, q));
+    const arts = s.a.filter(aid => matches(data.articles[aid].t, q) || matches(titleText(data.articles[aid].t, L), q));
     const links = (s.l || []).filter(([t]) => matches(t, q));
     show(artList, artMore, arts, artRow, PAGE);
     show(linkList, linkMore, links, linkRow, PAGE);
@@ -410,7 +413,7 @@ async function renderArticle(hallId, aid, token) {
   main.replaceChildren(el('article', { class: 'hall reader' },
     el('a', { class: 'back', href: back }, '← ', backLabel),
     el('p', { class: 'kicker' }, el('a', { href: `#/h/${hallId}` }, text(h.name, L))),
-    el('h2', { class: 'page-title' }, sciNodes(zh(a.t, L))),
+    el('h2', { class: 'page-title' }, sciNodes(titleText(a.t, L))),
     dates ? el('p', { class: 'fine' }, dates) : null,
     articleTools(hallId, aid, a),
     chineseNote(),
@@ -420,8 +423,8 @@ async function renderArticle(hallId, aid, token) {
     ...answers,
     a.files.length ? el('section', {}, el('h3', {}, tr('attachments')), el('p', { class: 'fine' }, tr('attachmentsNote')), fileList(a.files)) : null,
     el('nav', { class: 'prevnext' },
-      prev ? el('a', { href: `#/a/${hallId}/${prev}` }, '← ', zh(data.articles[prev].t, L)) : el('span'),
-      next ? el('a', { href: `#/a/${hallId}/${next}`, class: 'next' }, zh(data.articles[next].t, L), ' →') : el('span')),
+      prev ? el('a', { href: `#/a/${hallId}/${prev}` }, '← ', titleText(data.articles[prev].t, L)) : el('span'),
+      next ? el('a', { href: `#/a/${hallId}/${next}`, class: 'next' }, titleText(data.articles[next].t, L), ' →') : el('span')),
     el('p', { class: 'agency' }, tr('source'), ': ', el('a', { href: `https://kmweb.moa.gov.tw/subject/subject.php?id=${aid}`, ...EXT }, tr('viewOnMoa'), ' ↗'))));
 }
 
@@ -439,7 +442,7 @@ function articleTools(hallId, aid, a) {
   const url = `${APP_URL}#/a/${hallId}/${aid}`;
   const share = el('button', { type: 'button', class: 'tool' }, '↗ ', tr('shareArticle'));
   share.addEventListener('click', async () => {
-    const title = zh(a.t, L);
+    const title = titleText(a.t, L);
     if (navigator.share) { navigator.share({ title, url }).catch(() => {}); return; }
     try { await navigator.clipboard.writeText(url); share.replaceChildren('✓ ', tr('copied')); } catch { prompt(tr('copyLink'), url); }
   });
@@ -457,7 +460,7 @@ function articleTools(hallId, aid, a) {
 function renderMe() {
   const L = lang();
   const row = x => el('li', {}, el('a', { href: `#/a/${x.h}/${x.a}` },
-    el('span', { class: 'art-title' }, sciNodes(zh(x.t, L))),
+    el('span', { class: 'art-title' }, sciNodes(titleText(x.t, L))),
     el('span', { class: 'art-meta' }, text(hallById(x.h)?.name, L))));
   const saved = library.saved(), recent = library.recent();
   const clear = el('button', { type: 'button', class: 'button', onclick: () => { library.clearRecent(); render(); } }, tr('clearRecent'));
@@ -707,11 +710,13 @@ async function start() {
   try {
     // The scientific-name list comes with the hall list, so the first full render
     // already has it (rendering again later would knock the reader out of the search box).
-    const [halls, lex, names] = await Promise.all([
+    const [halls, lex, names, titles] = await Promise.all([
       fetch('data/halls.json').then(r => r.json()),
       fetch('data/sci.json').then(r => r.json()).catch(() => null),
       fetch('data/sections-i18n.json').then(r => r.json()).catch(() => null),
+      fetch('data/titles-i18n.json').then(r => r.json()).catch(() => null),
     ]);
+    if (titles) setTitles(titles);
     DATA = halls;
     if (lex) setLexicon(lex);
     if (names) setSectionNames(names);
