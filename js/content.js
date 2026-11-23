@@ -48,6 +48,17 @@ export function loadIndex() {
 
 export const zh = (s, lang) => (lang === 'zhs' ? t2s(s) : s ?? '');
 
+/* Article titles in English and Malay (data/titles-i18n.json: {繁體 title: [en, ms]},
+   built from tools/content/article_titles.tsv). A title not yet translated shows
+   MOA's Chinese. */
+let TITLES = {};
+export function setTitles(map) { TITLES = map || {}; }
+export function titleText(t, lang) {
+  if ((lang === 'en' || lang === 'ms') && TITLES[t]) return TITLES[t][lang === 'en' ? 0 : 1] || t;
+  return zh(t, lang);
+}
+export const translatedTitles = () => TITLES;
+
 export const photoUrl = key => `img/p/${key}.webp`;
 
 /* Article HTML from the build (already reduced to safe tags) into a fragment:

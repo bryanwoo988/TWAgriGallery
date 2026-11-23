@@ -30,6 +30,9 @@ https://github.com/bryanwoo988/woobrothers.my/blob/main/APP-STANDARDS.md
   News reprints (新鮮聞), member comments, votes and askers' names stay out; those link to kmweb.moa.gov.tw.
 - Section titles in English/Malay come from tools/content/section_titles.tsv (translated by Claude; titles only,
   no added facts). Run tools/build_section_i18n.py after editing it; a new MOA section needs a line there.
+- Article titles in English/Malay: tools/content/article_titles.tsv (number, en, ms) against the fixed list
+  tools/content/article_titles_src.json; run tools/build_title_i18n.py. Unsure plant/variety names are romanised,
+  never guessed. Article text stays Chinese.
 - Scientific names are italicized in the app (js/sciname.js), not in the data: only genera MOA itself writes
   as scientific names (data/sci.json, built by tools/build_articles.py).
 - Images come from MOA (used with permission) and are credited in Settings → About.

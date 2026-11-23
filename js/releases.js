@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.8.0', date: '2026-11-23', at: '2026-11-23T04:10:00Z',
+    notes: {
+      en: [
+        'Article titles are being translated into English and Malay, hall by hall; the first 550 are in, more come with each update. English search also finds translated titles.',
+      ],
+      zht: [
+        '文章標題正逐館翻成英文和馬來文，第一批 550 個已完成，之後每次更新會再增加。英文搜尋也能找到已翻譯的標題。',
+      ],
+      zh: [
+        '文章标题正逐馆翻成英文和马来文，第一批 550 个已完成，之后每次更新会再增加。英文搜索也能找到已翻译的标题。',
+      ],
+      ms: [
+        'Tajuk artikel sedang diterjemah ke bahasa Inggeris dan Melayu, dewan demi dewan; 550 yang pertama sudah siap, lebih banyak akan menyusul dalam setiap kemas kini. Carian bahasa Inggeris juga menemui tajuk yang diterjemah.',
+      ],
+    },
+  },
+  {
     v: '1.7.0', date: '2026-11-23', at: '2026-11-23T04:05:00Z',
     notes: {
       en: [
