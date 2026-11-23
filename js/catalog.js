@@ -11,12 +11,6 @@ export function sectionText(obj, lang) {
   return (lang === 'zhs' ? obj.zhs : obj.zht) || obj.zht || '';
 }
 
-// The name shown under the main one: the MOA original for en/ms readers,
-// the English name for Chinese readers.
-export function altName(hall, lang) {
-  return lang === 'en' || lang === 'ms' ? hall.name.zht : hall.name.en;
-}
-
 const COLLATOR = {
   en: 'en', ms: 'ms', zht: 'zh-Hant-TW-u-co-stroke', zhs: 'zh-Hans-u-co-pinyin',
 };
