@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.8.4', date: '2026-11-24', at: '2026-11-24T00:19:00Z',
+    notes: {
+      en: [
+        'All 18,672 article titles are now in English and Malay (up from 15,386).',
+      ],
+      zht: [
+        '全部 18,672 個文章標題都已有英文和馬來文（原本 15,386 個）。',
+      ],
+      zh: [
+        '全部 18,672 个文章标题都已有英文和马来文（原本 15,386 个）。',
+      ],
+      ms: [
+        'Kesemua 18,672 tajuk artikel kini dalam bahasa Inggeris dan Melayu (daripada 15,386).',
+      ],
+    },
+  },
+  {
     v: '1.8.3', date: '2026-11-24', at: '2026-11-24T00:05:00Z',
     notes: {
       en: [
