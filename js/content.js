@@ -173,7 +173,7 @@ export const allPhotos = {
   wanted: () => store.get(ALL_KEY) === 'on',
   asked: () => !!store.get(ASKED_KEY),
   markAsked: () => store.set(ASKED_KEY, '1'),
-  state: { running: false, done: 0, total: 0, failed: 0, bytes: 0, finished: false },
+  state: { running: false, done: 0, total: 0, failed: 0, bytes: 0, finished: false, full: false },
   listeners: new Set(),
   emit() { for (const f of this.listeners) f(this.state); },
   list: null,
@@ -188,7 +188,7 @@ export const allPhotos = {
     store.set(ALL_KEY, 'on');
     navigator.storage?.persist?.().catch(() => {});
     // Show the strip at once, even while waiting for the service worker.
-    Object.assign(this.state, { running: true, failed: 0, finished: false });
+    Object.assign(this.state, { running: true, failed: 0, finished: false, full: false });
     this.emit();
     let keys, cache;
     try {
@@ -211,8 +211,12 @@ export const allPhotos = {
     const worker = async () => {
       while (queue.length && this.state.running) {
         const k = queue.shift();
-        try { const r = await fetch(photoUrl(k)); if (!r.ok) throw 0; await r.blob(); this.state.done++; }
-        catch { this.state.failed++; }
+        try {
+          const r = await fetch(photoUrl(k)); if (!r.ok) throw 0; await r.blob();
+          // The worker shows a photo even when it can't keep it; if it wasn't kept, storage is full.
+          if (!(await cache.match(`${base}${k}.webp`))) { this.state.full = true; this.state.running = false; }
+          else this.state.done++;
+        } catch { this.state.failed++; }
         this.emit();
       }
     };

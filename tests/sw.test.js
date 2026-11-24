@@ -36,13 +36,14 @@ function load(content = { 'data/h/19.json': 'v2' }, existing = {}) {
   const listeners = {};
   const stores = new Map();
   const net = [];
+  const full = new Set();  // cache names whose put fails, like a phone out of storage
   const cacheFor = name => {
     if (!stores.has(name)) stores.set(name, new Map());
     const m = stores.get(name);
     const key = r => (typeof r === 'string' ? new URL(r, BASE).href : r.url);
     return {
       add: async r => { m.set(key(r), new Res('shell')); },
-      put: async (r, res) => { m.set(key(r), res); },
+      put: async (r, res) => { if (full.has(name)) throw new Error('QuotaExceededError'); m.set(key(r), res); },
       match: async (r, o) => {
         const k = key(r);
         if (m.has(k)) return m.get(k);
@@ -80,7 +81,7 @@ function load(content = { 'data/h/19.json': 'v2' }, existing = {}) {
     listeners.fetch({ request: { url, method: 'GET', mode }, respondWith: x => { p = x; } });
     return p ? await p : null;
   };
-  return { stores, net, run, respond };
+  return { stores, net, run, respond, full };
 }
 
 test('install fetches the app only, never hall text (it would hold an update back)', async () => {
@@ -129,4 +130,11 @@ test('links to MOA and other sites are left to the network', async () => {
   for (const url of ['https://kmweb.moa.gov.tw/subject/index.php?id=19', 'https://www.tndais.gov.tw/']) {
     assert.equal(await sw.respond(url, 'navigate'), null);
   }
+});
+
+test('when the phone is full, photos and halls are still shown, only not kept', async () => {
+  const sw = load({ 'data/h/19.json': 'v2' });
+  sw.full.add('twagri-photos'); sw.full.add('twagri-content');
+  assert.equal((await sw.respond(`${BASE}img/p/abc123.webp`)).body, `net:${BASE}img/p/abc123.webp`);
+  assert.equal((await sw.respond(`${BASE}data/h/19.json`)).body, `net:${BASE}data/h/19.json?v=v2`);
 });

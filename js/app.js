@@ -526,6 +526,7 @@ function allPhotosControl() {
     if (!box.isConnected && box.dataset.drawn) { allPhotos.listeners.delete(draw); return; }
     box.dataset.drawn = '1';
     const line = st.running ? tr('allProgress', { n: fmt(st.done), t: fmt(st.total) })
+      : st.full ? tr('allFull', { n: fmt(st.done), t: fmt(st.total) })
       : st.finished ? tr('allDone')
         : st.total ? tr('allPartly', { n: fmt(st.done), t: fmt(st.total) }) : '';
     const btn = st.running
@@ -546,15 +547,16 @@ function photoStrip() {
   const bar = document.querySelector('.topbar');
   let strip = null, hide = null;
   allPhotos.listeners.add(st => {
-    if (!st.running && !st.finished) { strip?.remove(); strip = null; return; }
+    if (!st.running && !st.finished && !st.full) { strip?.remove(); strip = null; return; }
     if (!strip) { strip = el('div', { class: 'dl-strip', role: 'status' }); bar.append(strip); }
     clearTimeout(hide);
     const pct = st.total ? (100 * st.done / st.total).toFixed(1) : 0;
     strip.style.setProperty('--pct', pct + '%');
     strip.replaceChildren(
-      el('span', {}, st.running ? tr('allProgress', { n: fmt(st.done), t: fmt(st.total) }) : tr('allDone')),
-      st.running ? el('button', { type: 'button', onclick: () => allPhotos.pause() }, tr('pause')) : null);
-    if (!st.running) hide = setTimeout(() => { strip?.remove(); strip = null; }, 4000);
+      el('span', {}, st.running ? tr('allProgress', { n: fmt(st.done), t: fmt(st.total) })
+        : st.full ? tr('allFull', { n: fmt(st.done), t: fmt(st.total) }) : tr('allDone')),
+      ...(st.running ? [el('button', { type: 'button', onclick: () => allPhotos.pause() }, tr('pause'))] : []));
+    if (!st.running) hide = setTimeout(() => { strip?.remove(); strip = null; }, st.full ? 10000 : 4000);
   });
 }
 

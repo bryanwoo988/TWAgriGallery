@@ -48,6 +48,7 @@ export const STRINGS = {
   allButton: { en: 'Download all photos ({mb} MB)', zht: '下載全部照片（{mb} MB）', zhs: '下载全部照片（{mb} MB）', ms: 'Muat turun semua foto ({mb} MB)' },
   allProgress: { en: 'Downloading photos {n} / {t}', zht: '下載照片中 {n} / {t}', zhs: '下载照片中 {n} / {t}', ms: 'Memuat turun foto {n} / {t}' },
   allDone: { en: 'All photos are ready offline', zht: '全部照片已可離線瀏覽', zhs: '全部照片已可离线浏览', ms: 'Semua foto sedia untuk luar talian' },
+  allFull: { en: 'Phone storage is full: {n} of {t} photos saved. The rest still show when you are online.', zht: '手機儲存空間已滿：已儲存 {n} / {t} 張照片。其餘照片在連網時仍可顯示。', zhs: '手机存储空间已满：已保存 {n} / {t} 张照片。其余照片在联网时仍可显示。', ms: 'Storan telefon penuh: {n} daripada {t} foto disimpan. Foto lain masih dipaparkan semasa dalam talian.' },
   allPartly: { en: '{n} of {t} photos saved', zht: '已儲存 {n} / {t} 張照片', zhs: '已保存 {n} / {t} 张照片', ms: '{n} daripada {t} foto disimpan' },
   pause: { en: 'Pause', zht: '暫停', zhs: '暂停', ms: 'Jeda' },
   resume: { en: 'Continue', zht: '繼續', zhs: '继续', ms: 'Sambung' },
