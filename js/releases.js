@@ -6,6 +6,23 @@
 
 export const RELEASES = [
   {
+    v: '1.8.5', date: '2026-11-24', at: '2026-11-24T06:08:00Z',
+    notes: {
+      en: [
+        'Fixed: photos in articles could stay blank, and "Downloading photos" could stay at 0, when the phone was out of storage. Photos now always show when you are online, and the download stops and tells you if storage is full.',
+      ],
+      zht: [
+        '修正：手機儲存空間不足時，文章裡的照片可能一片空白，「下載照片中」也可能一直停在 0。現在連網時照片一定會顯示；空間已滿時，下載會停止並告訴你。',
+      ],
+      zh: [
+        '修正：手机存储空间不足时，文章里的照片可能一片空白，“下载照片中”也可能一直停在 0。现在联网时照片一定会显示；空间已满时，下载会停止并告诉你。',
+      ],
+      ms: [
+        'Dibaiki: foto dalam artikel boleh kekal kosong, dan "Memuat turun foto" boleh kekal pada 0, apabila storan telefon penuh. Foto kini sentiasa dipaparkan semasa dalam talian, dan muat turun berhenti serta memberitahu anda jika storan penuh.',
+      ],
+    },
+  },
+  {
     v: '1.8.4', date: '2026-11-24', at: '2026-11-24T00:19:00Z',
     notes: {
       en: [
